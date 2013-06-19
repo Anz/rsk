@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-extern struct func* parse();
+extern struct ir_func* parse();
 extern symbol_t* yysymbols();
 extern char* yycode();
 
@@ -44,7 +44,7 @@ int main (int argc, char *argv[]) {
    }
    
    // compile into intermediate code
-   struct func* funcs = parse(in);
+   struct ir_func* funcs = parse(in);
    
    // compile into native code
    struct nr nr = x86_compile(funcs);
@@ -53,7 +53,7 @@ int main (int argc, char *argv[]) {
    //symbol_t* symbols = yysymbols();
    //char* code = yycode();
    
-   for (struct func* f = funcs; f != NULL; f = f->next) {
+   /*for (struct ir_func* f = funcs; f != NULL; f = f->next) {
       printf("%s (", f->name, f->args);
       for (int i = 0; i < f->args; i++) {
          printf(" %c", 97+i);
@@ -62,10 +62,9 @@ int main (int argc, char *argv[]) {
       for (struct ins* i = f->first; i != NULL; i = i->next) {
          printf("\t%s\n", ir_dis(i));
      }
-   }
-  
-   //elf_write(out, *symbols, code, 512);
-   elf_write(out, *nr.symbols, nr.text, 4096);
+   }*/
+   
+   elf_write(out, *nr.symbols, nr.text, nr.text_size, nr.data, nr.data_size);
    fclose(out);
    return 0;
 }

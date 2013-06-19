@@ -4,7 +4,7 @@
 #include <string.h>
 
 // mnemonic
-char* ir_dis(struct ins* i) {
+/*char* ir_dis(struct ins* i) {
    static char name[10];
 
    switch(i->op) {
@@ -55,4 +55,4 @@ void ir_call(struct func* f, struct func* func) {
    ins->func = func;
    
    ir_push_ins(f, ins);
-}
+}*/

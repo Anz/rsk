@@ -7,88 +7,30 @@
 #include <stdio.h>
 #include <string.h>
 
+#define PARSER_INIT(x) { size_t size = sizeof(*x); x = malloc(size); memset(x, 0, size); }
+
 extern FILE * yyin;
 extern int yylex();
 extern int yylineno;
 
-struct func* func_cur = NULL;
-struct func* func_first = NULL;
+struct ir_func* func_first = NULL;
 
-typedef struct parameter {
-   char* name;
-   struct parameter* next;
-} parameter_t;
+struct ir_param* param_cur = NULL;
 
-parameter_t* parameters = NULL;
-
-int function_index = 0;
+struct ir_type* type_int = NULL;
+struct ir_type* type_float = NULL;
+struct ir_type* type_array = NULL;
 
 void yyerror(const char *str) {
    fprintf(stderr,"parser error on line %i: %s\n", yylineno,str);
    exit(1);
 }
 
-struct func* func_get(char* name) {
-   for (struct func* f = func_first; f != NULL; f = f->next) {
-      if (strcmp(f->name, name) == 0) {
-         return f;
-      }
-   }
-   
-   return NULL;
-}
-
-struct func* func_new(char* name) {
-   struct func* f = func_get(name);
-   
-   if (f == NULL) {
-      f = malloc(sizeof(struct func));
-      memset(f, 0, sizeof(f));
-      f->name = name;
-      f->next = func_first;
-      func_first = f;
-   }
-   
-   return f;
-}
-
-struct func* symbol_add(char* name) {
-   struct func* f = func_get(name);
-   
-   if (f == NULL) {
-      f = malloc(sizeof(struct func));
-      memset(f, 0, sizeof(f));
-      f->name = name;
-      f->next = func_first;
-      func_first = f;
-   }
-   
-   parameters = NULL;
-   func_cur = f;
-   
-   return f;
-}
-
-void parameter_add(char* name) {
-   // new
-   {
-      func_cur->args++;
-   }
-
-   // old
-   {
-      parameter_t* parameter = malloc(sizeof(parameter_t));
-      parameter->name = (char*)strdup(name);
-      parameter->next = parameters;   
-      parameters = parameter;
-   }
-}
-
-int parameter_get(char* name) {
+struct ir_param* parameter_get(struct ir_param* param, char* name) {
    int index = 0;
-   for (parameter_t* p = parameters; p != NULL; p = p->next) {
+   for (struct ir_param* p = param; p != NULL; p = p->next) {
       if (strcmp(p->name, name) == 0) {
-         return func_cur->args - index - 1;
+         return p;
       }
       index++;
    }
@@ -98,9 +40,46 @@ int parameter_get(char* name) {
    yyerror(error);
 }
 
+
+struct ir_func* func_get(char* name) {
+   for (struct ir_func* f = func_first; f != NULL; f = f->next) {
+      if (strcmp(f->name, name) == 0) {
+         return f;
+      }
+   }
+   return NULL;
+}
+
+struct ir_func* func_new(char* name) {
+   struct ir_func* f = func_get(name);
+   
+   if (f == NULL) {
+      f = malloc(sizeof(struct ir_func));
+      memset(f, 0, sizeof(*f));
+      f->name = strdup(name);
+      f->next = func_first;
+      func_first = f;
+   }
+   
+   return f;
+}
+
 int yyparse ();
 
-struct func* parse(FILE* in) {
+struct ir_func* parse(FILE* in) {
+   // setup types
+   type_int = malloc(sizeof(*type_int));
+   type_int->add = func_new("int+");
+   type_int->sub = func_new("int-");
+   type_int->mul = func_new("int*");
+   type_int->div = func_new("int/");
+   
+   type_float = malloc(sizeof(*type_float));
+   type_float->add = func_new("float+");
+   
+   type_array = malloc(sizeof(*type_array));
+   type_array->add = func_new("array+");
+
    // parsing
    yyin = in;
    yyparse();
@@ -113,20 +92,26 @@ struct func* parse(FILE* in) {
 %left  '+'  '-'
 %left  '*'  '/'
 
-%union {   
+%union {
+   int word;
    char* str;
-   int integer;
-   struct value_t {
-      char* data;
+   struct {
+      void* ptr;
       size_t size;
-   } value;
+   } data;
+   struct ir_func* func;
+   struct ir_param* param;
+   struct ir_arg* arg;
 }
 
-%token ID INT VAL
+%token ID INT FLOAT ARRAY
 
-%type <str> ID
-%type <integer> INT
-%type <value> VAL
+%type <func> line definition
+%type <param> parameters parameter
+%type <arg> expr term factor args
+%type <str> ID '+' '-' '*' '/'
+%type <word> INT FLOAT
+%type <data> ARRAY
 
 %%
 
@@ -134,36 +119,35 @@ line        : line definition
             | definition
             ;
 
-definition  : name parameters '=' expr        {  }
+definition  : ID parameters '=' expr         { $$ = func_new($1); $$->param = $2; $$->value = $4; }
+            ;
+
+parameters  : '(' parameter ')'              { $$ = param_cur; }
+            |                                { $$ = NULL; param_cur = NULL; }
+            ;
+
+parameter   : parameter ',' ID               { PARSER_INIT($$); $$->name = strdup($3); $1->next = $$; $$->index = $1->index + 1; }
+            | ID                             { PARSER_INIT($$); $$->name = strdup($1); $$->index = 0; param_cur = $$; }
             ;
             
-name        : ID                              { symbol_add(strdup($1)); }
+expr        : expr '+' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = type_int; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
+            | expr '-' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = type_int; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
+            | term
             ;
 
-parameters  : '(' parameter ')'
-            |
-            ;
-
-parameter   : parameter ',' ID   { parameter_add(strdup($3)); }
-            | ID                 { parameter_add(strdup($1)); }
-            ;
-            
-expr        : expr '+' term      { ir_call(func_cur, func_new("int_add")); }
-            | expr '-' term      { ir_call(func_cur, func_new("int_sub")); }
-            | term               { }
-            ;
-
-term        : term '*' factor    { ir_call(func_cur, func_new("int_mul")); }
-            | term '/' factor    { ir_call(func_cur, func_new("int_div"));  }
+term        : term '*' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = type_int; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
+            | term '/' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = type_int; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
             | factor
             ;
 
-factor      : INT                { ir_loadv(func_cur, $1); }
-            | ID '(' args ')'    { ir_call(func_cur, func_new(strdup($1))); }
-            | ID                 { ir_loadp(func_cur, parameter_get(strdup($1))); }
+factor      : INT                            { PARSER_INIT($$); $$->arg_type = IR_ARG_WORD; $$->type = type_int; $$->word = $1; }
+            | FLOAT                          { PARSER_INIT($$); $$->arg_type = IR_ARG_WORD; $$->type = type_float; $$->word = $1; }
+            | ARRAY                          { PARSER_INIT($$); $$->arg_type = IR_ARG_DATA; $$->type = type_array; $$->data.ptr = $1.ptr; $$->data.size = $1.size; }
+            | ID '(' args ')'                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = type_int;$$->call.func = func_new(strdup($1)); $$->call.arg = $3; }
+            | ID                             { PARSER_INIT($$); $$->arg_type = IR_ARG_PARAM; $$->type = type_int; $$->param = parameter_get(param_cur, $1); }
             ;
 
-args        : args ',' factor
+args        : factor ',' args                { $$ = $1; $$->next = $3; }
             | factor
             ;
 %%

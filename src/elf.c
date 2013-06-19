@@ -3,8 +3,8 @@
 #include <elf.h>
 #include <string.h>
 
-void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size) {
-   const char shstrtab[] = "\0.symtab\0.shstrtab\0.strtab\0.text\0.rel.text";
+void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, unsigned char* data, int data_size) {
+   const char shstrtab[] = "\0.symtab\0.shstrtab\0.strtab\0.text\0.data\0.rel.text";
    
    // symbol labels
    int sym_count = 0;
@@ -20,7 +20,8 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size) {
    int offset_strtab = offset_shstrtab + sizeof(shstrtab);
    int offset_symbols =  offset_strtab + strtab_size;
    int offset_code = offset_symbols + sym_size;
-   int offset_sections = offset_code + code_size;
+   int offset_data = offset_code + code_size;
+   int offset_sections = offset_data + data_size;
 
 	/* ELF HEADER */
    Elf32_Ehdr ehdr = {
@@ -45,7 +46,7 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size) {
       .e_phnum     = 0,
       /* section header */
       .e_shentsize = sizeof (Elf32_Shdr),
-      .e_shnum     = 5,
+      .e_shnum     = 6,
       .e_shstrndx  = 2 
    };
    fwrite (&ehdr, sizeof (Elf32_Ehdr), 1, fd);
@@ -81,9 +82,11 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size) {
    // text
    fwrite(code, 1, code_size, fd);
    
+   // data
+   fwrite(data, 1, data_size, fd);
+   
    // section header table
-   //Elf32_Shdr sections[6];
-   Elf32_Shdr sections[5];
+   Elf32_Shdr sections[6];
    memset(sections, 0, sizeof(sections));
    
    // symbol section header
@@ -113,6 +116,14 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size) {
    sections[4].sh_offset = offset_code;
    sections[4].sh_size = code_size;
    sections[4].sh_link = 3;
+   
+   // data section header
+   sections[5].sh_name = 33;
+   sections[5].sh_type = SHT_PROGBITS;
+   sections[5].sh_flags = SHF_ALLOC | SHF_WRITE;
+   sections[5].sh_offset = 0;
+   sections[5].sh_size = 0;
+   sections[5].sh_link = 0;
    
    // relocation section header
 /*   sections[5].sh_name = 33;

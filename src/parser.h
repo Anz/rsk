@@ -39,7 +39,8 @@
    enum yytokentype {
      ID = 258,
      INT = 259,
-     VAL = 260
+     FLOAT = 260,
+     ARRAY = 261
    };
 #endif
 
@@ -50,19 +51,22 @@ typedef union YYSTYPE
 {
 
 /* Line 2068 of yacc.c  */
-#line 116 "src/parser.y"
-   
+#line 95 "src/parser.y"
+
+   int word;
    char* str;
-   int integer;
-   struct value_t {
-      char* data;
+   struct {
+      void* ptr;
       size_t size;
-   } value;
+   } data;
+   struct ir_func* func;
+   struct ir_param* param;
+   struct ir_arg* arg;
 
 
 
 /* Line 2068 of yacc.c  */
-#line 66 "src/parser.h"
+#line 70 "src/parser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
