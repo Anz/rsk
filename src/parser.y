@@ -130,13 +130,13 @@ parameter   : parameter ',' ID               { PARSER_INIT($$); $$->name = strdu
             | ID                             { PARSER_INIT($$); $$->name = strdup($1); $$->index = 0; param_cur = $$; }
             ;
             
-expr        : expr '+' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = type_int; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
-            | expr '-' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = type_int; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
+expr        : expr '+' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = $1->type; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
+            | expr '-' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = $1->type; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
             | term
             ;
 
-term        : term '*' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = type_int; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
-            | term '/' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = type_int; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
+term        : term '*' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = $1->type; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
+            | term '/' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = $1->type; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
             | factor
             ;
 
@@ -147,7 +147,7 @@ factor      : INT                            { PARSER_INIT($$); $$->arg_type = I
             | ID                             { PARSER_INIT($$); $$->arg_type = IR_ARG_PARAM; $$->type = type_int; $$->param = parameter_get(param_cur, $1); }
             ;
 
-args        : factor ',' args                { $$ = $1; $$->next = $3; }
-            | factor
+args        : expr ',' args                { $$ = $1; $$->next = $3; }
+            | expr
             ;
 %%

@@ -4,7 +4,7 @@
 #include <string.h>
 
 void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, unsigned char* data, int data_size) {
-   const char shstrtab[] = "\0.symtab\0.shstrtab\0.strtab\0.text\0.data\0.rel.text";
+   const char shstrtab[] = "\0.symtab\0.shstrtab\0.strtab\0.text\0.rodata\0.rel.text";
    
    // symbol labels
    int sym_count = 0;
@@ -121,8 +121,8 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, u
    sections[5].sh_name = 33;
    sections[5].sh_type = SHT_PROGBITS;
    sections[5].sh_flags = SHF_ALLOC | SHF_WRITE;
-   sections[5].sh_offset = 0;
-   sections[5].sh_size = 0;
+   sections[5].sh_offset = offset_data;
+   sections[5].sh_size = data_size;
    sections[5].sh_link = 0;
    
    // relocation section header

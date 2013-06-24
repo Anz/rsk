@@ -63,7 +63,6 @@ int main (int argc, char *argv[]) {
          printf("\t%s\n", ir_dis(i));
      }
    }*/
-   
    elf_write(out, *nr.symbols, nr.text, nr.text_size, nr.data, nr.data_size);
    fclose(out);
    return 0;

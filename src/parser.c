@@ -446,7 +446,7 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  6
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   29
+#define YYLAST   31
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  15
@@ -514,8 +514,8 @@ static const yytype_int8 yyrhs[] =
        7,    -1,     7,    -1,    20,     3,    21,    -1,    20,     4,
       21,    -1,    21,    -1,    21,     5,    22,    -1,    21,     6,
       22,    -1,    22,    -1,     8,    -1,     9,    -1,    10,    -1,
-       7,    12,    23,    13,    -1,     7,    -1,    22,    14,    23,
-      -1,    22,    -1
+       7,    12,    23,    13,    -1,     7,    -1,    20,    14,    23,
+      -1,    20,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
@@ -579,24 +579,24 @@ static const yytype_uint8 yydefact[] =
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     2,     3,     5,     9,    17,    18,    19,    27
+      -1,     2,     3,     5,     9,    26,    18,    19,    27
 };
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-#define YYPACT_NINF -22
+#define YYPACT_NINF -7
 static const yytype_int8 yypact[] =
 {
-      -5,     8,     1,   -22,     0,    10,   -22,   -22,   -22,    -8,
-       5,   -22,    15,    12,   -22,   -22,   -22,     6,    11,   -22,
-     -22,     5,     5,     5,     5,     5,     9,    13,    11,    11,
-     -22,   -22,     5,   -22,   -22
+       3,     7,     2,    -7,    13,    14,    -7,    -7,    -7,    -6,
+      -4,    -7,    17,    15,    -7,    -7,    -7,     9,    10,    -7,
+      -7,    -4,    -4,    -4,    -4,    -4,    -3,     1,    10,    10,
+      -7,    -7,    -4,    -7,    -7
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -22,   -22,    23,   -22,   -22,   -22,    -4,   -21,    -3
+      -7,    -7,    19,    -7,    -7,    16,    -5,    -2,    -1
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
@@ -605,22 +605,24 @@ static const yytype_int8 yypgoto[] =
 #define YYTABLE_NINF -1
 static const yytype_uint8 yytable[] =
 {
-      26,     6,     1,    30,    31,    11,    12,     8,     1,    22,
-      23,    26,    13,    14,    15,    16,    24,    25,    28,    29,
-       4,    10,    20,    32,    21,     7,    33,     0,     0,    34
+      22,    23,     6,    13,    14,    15,    16,    11,    12,     1,
+       1,    32,    22,    23,    33,    24,    25,    28,    29,     4,
+       8,     7,    30,    31,    20,    10,    17,    21,     0,     0,
+       0,    34
 };
 
 #define yypact_value_is_default(yystate) \
-  ((yystate) == (-22))
+  ((yystate) == (-7))
 
 #define yytable_value_is_error(yytable_value) \
   YYID (0)
 
 static const yytype_int8 yycheck[] =
 {
-      21,     0,     7,    24,    25,    13,    14,     7,     7,     3,
-       4,    32,     7,     8,     9,    10,     5,     6,    22,    23,
-      12,    11,     7,    14,    12,     2,    13,    -1,    -1,    32
+       3,     4,     0,     7,     8,     9,    10,    13,    14,     7,
+       7,    14,     3,     4,    13,     5,     6,    22,    23,    12,
+       7,     2,    24,    25,     7,    11,    10,    12,    -1,    -1,
+      -1,    32
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
@@ -629,7 +631,7 @@ static const yytype_uint8 yystos[] =
 {
        0,     7,    16,    17,    12,    18,     0,    17,     7,    19,
       11,    13,    14,     7,     8,     9,    10,    20,    21,    22,
-       7,    12,     3,     4,     5,     6,    22,    23,    21,    21,
+       7,    12,     3,     4,     5,     6,    20,    23,    21,    21,
       22,    22,    14,    13,    23
 };
 
@@ -1503,28 +1505,28 @@ yyreduce:
 
 /* Line 1806 of yacc.c  */
 #line 133 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = type_int; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = (yyvsp[(1) - (3)].arg)->type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
     break;
 
   case 10:
 
 /* Line 1806 of yacc.c  */
 #line 134 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = type_int; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = (yyvsp[(1) - (3)].arg)->type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
     break;
 
   case 12:
 
 /* Line 1806 of yacc.c  */
 #line 138 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = type_int; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = (yyvsp[(1) - (3)].arg)->type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
     break;
 
   case 13:
 
 /* Line 1806 of yacc.c  */
 #line 139 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = type_int; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = (yyvsp[(1) - (3)].arg)->type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
     break;
 
   case 15:
@@ -1572,7 +1574,7 @@ yyreduce:
 
 
 /* Line 1806 of yacc.c  */
-#line 1576 "src/parser.c"
+#line 1578 "src/parser.c"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
