@@ -479,7 +479,28 @@ char *yytext;
 #include <string.h>
 #include "parser.h"
 
-#line 483 "<stdout>"
+char* sc_string(char* s) {
+   int len = strlen(s);
+   int shift = -1;
+   s[len-1] = '\0';
+   for (int i = 1; i < len; i++) {
+      s[i+shift] = s[i];
+      
+      if (s[i] == '\\' && i+1 < len) {
+         switch (s[i+1]) {
+            case 'n':
+               s[i+shift] = '\n';
+               i++;
+               shift--;
+               break;
+         }
+      }
+   }
+   
+   return s;
+}
+
+#line 504 "<stdout>"
 
 #define INITIAL 0
 
@@ -666,10 +687,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 19 "src/scanner.l"
+#line 40 "src/scanner.l"
 
 
-#line 673 "<stdout>"
+#line 694 "<stdout>"
 
 	if ( !(yy_init) )
 		{
@@ -754,47 +775,47 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 21 "src/scanner.l"
+#line 42 "src/scanner.l"
 ;
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 22 "src/scanner.l"
+#line 43 "src/scanner.l"
 { yylineno++; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 23 "src/scanner.l"
+#line 44 "src/scanner.l"
 { float val = (float)atof(yytext); memcpy(&yylval.word, &val, 4); return FLOAT; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 24 "src/scanner.l"
+#line 45 "src/scanner.l"
 { yylval.word = atoi(yytext); return INT; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 25 "src/scanner.l"
+#line 46 "src/scanner.l"
 { yylval.str = strdup(yytext); return ID; }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 26 "src/scanner.l"
-{ yylval.data.size = strlen(yytext); yytext[yylval.data.size-1]  = 0; yylval.data.ptr = strdup(&yytext[1]);  return ARRAY; }
+#line 47 "src/scanner.l"
+{ yylval.data.ptr = strdup(sc_string(yytext)); yylval.data.size = strlen(yylval.data.ptr); return ARRAY; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 27 "src/scanner.l"
+#line 48 "src/scanner.l"
 { yylval.str = strdup(yytext); return yytext[0]; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 29 "src/scanner.l"
+#line 50 "src/scanner.l"
 ECHO;
 	YY_BREAK
-#line 798 "<stdout>"
+#line 819 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1792,7 +1813,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 29 "src/scanner.l"
+#line 50 "src/scanner.l"
 
 
 
