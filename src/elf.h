@@ -11,6 +11,6 @@ typedef struct symbol {
    struct symbol* next;
 } symbol_t;
 
-void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, struct buffer* data);
+void elf_write(FILE* fd, symbol_t symbols, struct buffer* text, struct buffer* data);
 
 #endif

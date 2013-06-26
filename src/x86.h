@@ -8,8 +8,7 @@
 
 struct nr {
    symbol_t* symbols;
-   char* text;
-   size_t text_size;
+   struct buffer text;
    struct buffer data;
 };
 

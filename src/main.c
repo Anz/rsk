@@ -49,21 +49,7 @@ int main (int argc, char *argv[]) {
    // compile into native code
    struct nr nr = x86_compile(funcs);
    
-   
-   //symbol_t* symbols = yysymbols();
-   //char* code = yycode();
-   
-   /*for (struct ir_func* f = funcs; f != NULL; f = f->next) {
-      printf("%s (", f->name, f->args);
-      for (int i = 0; i < f->args; i++) {
-         printf(" %c", 97+i);
-      }
-      printf(" )\n");
-      for (struct ins* i = f->first; i != NULL; i = i->next) {
-         printf("\t%s\n", ir_dis(i));
-     }
-   }*/
-   elf_write(out, *nr.symbols, nr.text, nr.text_size, &nr.data);
+   elf_write(out, *nr.symbols, &nr.text, &nr.data);
    fclose(out);
    return 0;
 }

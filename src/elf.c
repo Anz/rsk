@@ -6,7 +6,7 @@
 #define LOAD_ADDRESS_TEXT 0x8048000
 //#define LOAD_ADDRESS_DATA 0x8049000
 
-void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, struct buffer* data) {
+void elf_write(FILE* fd, symbol_t symbols, struct buffer* text, struct buffer* data) {
    const char shstrtab[] = "\0.symtab\0.shstrtab\0.strtab\0.text\0.data\0.rel.text";
    
    // symbol labels
@@ -35,7 +35,7 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, s
       .e_version = EV_CURRENT,
       .e_entry   = LOAD_ADDRESS_TEXT + 0x74,
       .e_phoff   = sizeof(Elf32_Ehdr),
-      .e_shoff   = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + code_size + data->size + sym_size + strtab_size + sizeof(shstrtab), 
+      .e_shoff   = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + text->size + data->size + sym_size + strtab_size + sizeof(shstrtab), 
       .e_flags   = 0,
       .e_ehsize   = sizeof (Elf32_Ehdr),
       /* program header */
@@ -56,8 +56,8 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, s
       .p_offset = 0,
       .p_vaddr = LOAD_ADDRESS_TEXT,
       .p_paddr = 0,
-      .p_filesz = code_size,
-      .p_memsz = code_size,
+      .p_filesz = text->size,
+      .p_memsz = text->size,
       .p_flags = PF_R | PF_X,
       .p_align = 0x1000
    };
@@ -66,8 +66,8 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, s
    // program header
    Elf32_Phdr data_header = {
       .p_type   = PT_LOAD,
-      .p_offset = code_size,
-      .p_vaddr = LOAD_ADDRESS_TEXT + code_size,
+      .p_offset = text->size,
+      .p_vaddr = LOAD_ADDRESS_TEXT + text->size,
       .p_paddr = 0,
       .p_filesz = data->size,
       .p_memsz = data->size,
@@ -77,7 +77,7 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, s
    fwrite(&data_header, 1, sizeof(data_header), fd);
    
    // text
-   fwrite(code, 1, code_size, fd);
+   fwrite(text->data, 1, text->size, fd);
    
    // data
    fwrite(data->data, 1, data->size, fd);
@@ -124,7 +124,7 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, s
       text_sec.sh_flags = SHF_ALLOC | SHF_EXECINSTR;
       text_sec.sh_addr = LOAD_ADDRESS_TEXT + sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr);
       text_sec.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr);
-      text_sec.sh_size = code_size;
+      text_sec.sh_size = text->size;
       text_sec.sh_link = 0;
       fwrite(&text_sec, 1, sizeof(text_sec), fd);
    }
@@ -136,8 +136,8 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, s
       data_sec.sh_name = 33;
       data_sec.sh_type = SHT_PROGBITS;
       data_sec.sh_flags = SHF_ALLOC | SHF_WRITE;
-      data_sec.sh_addr = LOAD_ADDRESS_TEXT + sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + code_size;
-      data_sec.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + code_size;
+      data_sec.sh_addr = LOAD_ADDRESS_TEXT + sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + text->size;
+      data_sec.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + text->size;
       data_sec.sh_size = data->size;
       data_sec.sh_link = 0;
       fwrite(&data_sec, 1, sizeof(data_sec), fd);
@@ -149,7 +149,7 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, s
       memset(&sym_sec, 0, sizeof(sym_sec));
       sym_sec.sh_name = 1;
       sym_sec.sh_type = SHT_SYMTAB;
-      sym_sec.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + code_size + data->size;
+      sym_sec.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + text->size + data->size;
       sym_sec.sh_size = sym_size;
       sym_sec.sh_link = 4;
       sym_sec.sh_entsize = sizeof(Elf32_Sym);
@@ -162,7 +162,7 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, s
       memset(&symstr_sec, 0, sizeof(symstr_sec));
       symstr_sec.sh_name = 19;
       symstr_sec.sh_type = SHT_STRTAB;
-      symstr_sec.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + code_size + data->size + sym_size;
+      symstr_sec.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + text->size + data->size + sym_size;
       symstr_sec.sh_size = strtab_size;
       fwrite(&symstr_sec, 1, sizeof(symstr_sec), fd);
    }
@@ -173,7 +173,7 @@ void elf_write(FILE* fd, symbol_t symbols, unsigned char* code, int code_size, s
       memset(&str_sec, 0, sizeof(str_sec));
       str_sec.sh_name = 9;
       str_sec.sh_type = SHT_STRTAB;
-      str_sec.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + code_size + data->size + sym_size + strtab_size;
+      str_sec.sh_offset = sizeof(Elf32_Ehdr) + 2*sizeof(Elf32_Phdr) + text->size + data->size + sym_size + strtab_size;
       str_sec.sh_size = sizeof(shstrtab);
       fwrite(&str_sec, 1, sizeof(str_sec), fd);
    }
