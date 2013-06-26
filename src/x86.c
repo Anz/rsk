@@ -1,5 +1,6 @@
 #include "x86.h"
 #include <stdlib.h>
+#include <stdbool.h>
 
 struct text_ref {
    char* callee;
@@ -26,7 +27,7 @@ void x86_loadp(struct nr* nr, int param) {
    char code[] = { 0x8b, 0x55, (1+param)*sizeof(int), 0x52 };
    x86_write(nr, code, sizeof(code));
    
-   char print[] = {      
+   /*char print[] = {      
       0x59,                          // pop    %ecx
       0x8b, 0x11,                    // mov    (%ecx),%edx
       0x83, 0xc1, 0x04,              // add    $0x4,%ecx
@@ -34,23 +35,25 @@ void x86_loadp(struct nr* nr, int param) {
       0xb8, 0x04, 0x00, 0x00, 0x00,  // mov   $0x4,%eax
       0xcd, 0x80,               	    // int    $0x80
    };
-   x86_write(nr, print, sizeof(print));
+   x86_write(nr, print, sizeof(print));*/
 }
 
-void x86_loadv(struct nr* nr, int arg) {
+void x86_loadv(struct nr* nr, int arg, bool write) {
    char code[] = { 0x68 };
    x86_write(nr, code, sizeof(code));
    x86_write(nr, (char*)&arg, sizeof(arg));
    
-   char print[] = {      
-      0x59,                          // pop    %ecx
-      0x8b, 0x11,                    // mov    (%ecx),%edx
-      0x83, 0xc1, 0x04,              // add    $0x4,%ecx
-      0xbb, 0x01, 0x00, 0x00, 0x00,  // mov    $0x1,%ebx
-      0xb8, 0x04, 0x00, 0x00, 0x00,  // mov   $0x4,%eax
-      0xcd, 0x80,               	    // int    $0x80
-   };
-   x86_write(nr, print, sizeof(print));
+   if (write) {
+      char print[] = {      
+         0x59,                          // pop    %ecx
+         0x8b, 0x11,                    // mov    (%ecx),%edx
+         0x83, 0xc1, 0x04,              // add    $0x4,%ecx
+         0xbb, 0x01, 0x00, 0x00, 0x00,  // mov    $0x1,%ebx
+         0xb8, 0x04, 0x00, 0x00, 0x00,  // mov   $0x4,%eax
+         0xcd, 0x80,               	    // int    $0x80
+      };
+      x86_write(nr, print, sizeof(print));
+   }
 }
 
 void x86_loadd(struct nr* nr, void* ptr) {
@@ -159,7 +162,7 @@ void x86_call(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg
       param += sizeof(int*);
    }
    x86_write(nr, (char*)&param, sizeof(param));
-   char push[] = { 0x50 };
+   char push[] = { 0x90 };
    x86_write(nr, push, sizeof(push));
    
    struct text_ref* ref = malloc(sizeof(struct text_ref));
@@ -186,11 +189,11 @@ void x86_func_compile(struct text_ref** refs, struct nr* nr, struct ir_arg* arg,
          break;
       }
       case IR_ARG_WORD: {
-         x86_loadv(nr, arg->word);
+         x86_loadv(nr, arg->word, false);
          break;
       }
       case IR_ARG_DATA: {
-         x86_loadv(nr, 0x08048274+nr->data.size);
+         x86_loadv(nr, 0x08048274+nr->data.size, true);
          buffer_writew(&nr->data, arg->data.size);
          buffer_write(&nr->data, arg->data.ptr, arg->data.size);
          break;
