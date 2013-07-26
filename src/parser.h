@@ -51,7 +51,7 @@ typedef union YYSTYPE
 {
 
 /* Line 2068 of yacc.c  */
-#line 95 "src/parser.y"
+#line 103 "src/parser.y"
 
    int word;
    char* str;
@@ -60,13 +60,14 @@ typedef union YYSTYPE
       size_t size;
    } data;
    struct ir_func* func;
-   struct ir_param* param;
+   struct map* params;
    struct ir_arg* arg;
+   struct list* list;
 
 
 
 /* Line 2068 of yacc.c  */
-#line 70 "src/parser.h"
+#line 71 "src/parser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

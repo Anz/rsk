@@ -1,5 +1,6 @@
 %{
 
+#include "map.h"
 #include "elf.h"
 #include "x86.h"
 #include "ir.h"
@@ -15,7 +16,7 @@ extern int yylineno;
 
 struct ir_func* func_first = NULL;
 
-struct ir_param* param_cur = NULL;
+struct map* params_cur = NULL;
 
 struct ir_type* type_int = NULL;
 struct ir_type* type_float = NULL;
@@ -25,21 +26,6 @@ void yyerror(const char *str) {
    fprintf(stderr,"parser error on line %i: %s\n", yylineno,str);
    exit(1);
 }
-
-struct ir_param* parameter_get(struct ir_param* param, char* name) {
-   int index = 0;
-   for (struct ir_param* p = param; p != NULL; p = p->next) {
-      if (strcmp(p->name, name) == 0) {
-         return p;
-      }
-      index++;
-   }
-      
-   char error[512];
-   sprintf(error, "parameter '%s' not defined", name); 
-   yyerror(error);
-}
-
 
 struct ir_func* func_get(char* name) {
    for (struct ir_func* f = func_first; f != NULL; f = f->next) {
@@ -62,6 +48,28 @@ struct ir_func* func_new(char* name) {
    }
    
    return f;
+}
+
+static void set_arg(struct ir_arg* arg, char* name) {
+   int* index = (int*) map_get(params_cur, name, strlen(name) + 1);
+   
+   // parameter
+   if (index != NULL) {
+      arg->arg_type = IR_ARG_PARAM;
+      arg->param = *index;
+      
+      arg->res = IR_RES_STA;
+      arg->res_type = type_int;
+      return;
+   }
+   
+   // func
+   struct ir_func* func = func_new(strdup(name));
+   arg->arg_type = IR_ARG_CALL;
+   arg->call.func = func;
+   
+   arg->res = IR_RES_STA;
+   arg->res_type = type_array;
 }
 
 int yyparse ();
@@ -100,15 +108,17 @@ struct ir_func* parse(FILE* in) {
       size_t size;
    } data;
    struct ir_func* func;
-   struct ir_param* param;
+   struct map* params;
    struct ir_arg* arg;
+   struct list* list;
 }
 
 %token ID INT FLOAT ARRAY
 
 %type <func> line definition
-%type <param> parameters parameter
-%type <arg> expr term factor args
+%type <params> parameters parameter
+%type <arg> expr term factor
+%type <list> args
 %type <str> ID '+' '-' '*' '/'
 %type <word> INT FLOAT
 %type <data> ARRAY
@@ -119,35 +129,35 @@ line        : line definition
             | definition
             ;
 
-definition  : ID parameters '=' expr         { $$ = func_new($1); $$->param = $2; $$->value = $4; }
+definition  : ID parameters '=' expr         { $$ = func_new($1); $$->params = *$2; $$->value = *$4; }
             ;
 
-parameters  : '(' parameter ')'              { $$ = param_cur; }
-            |                                { $$ = NULL; param_cur = NULL; }
+parameters  : '(' parameter ')'              { $$ = $2; params_cur = $$; }
+            |                                { PARSER_INIT($$); map_init($$); params_cur = $$; }
             ;
 
-parameter   : parameter ',' ID               { PARSER_INIT($$); $$->name = strdup($3); $1->next = $$; $$->index = $1->index + 1; }
-            | ID                             { PARSER_INIT($$); $$->name = strdup($1); $$->index = 0; param_cur = $$; }
+parameter   : parameter ',' ID               { int* index = malloc(4); *index = $1->l.size; map_set($1, strdup($3), strlen($3) + 1, index); }
+            | ID                             { PARSER_INIT($$); map_init($$); int* index = malloc(4); *index = $$->l.size; map_set($$, strdup($1), strlen($1) + 1, index); }
             ;
             
-expr        : expr '+' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = $1->type; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
-            | expr '-' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = $1->type; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
+expr        : expr '+' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->res = IR_RES_STA; $$->res_type = $1->res_type; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
+            | expr '-' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->res = IR_RES_STA; $$->res_type = $1->res_type; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
             | term
             ;
 
-term        : term '*' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = $1->type; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
-            | term '/' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = $1->type; $$->call.func = func_new($2); $$->call.arg = $1; $1->next = $3; }
+term        : term '*' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->res = IR_RES_STA; $$->res_type = $1->res_type; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
+            | term '/' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->res = IR_RES_STA; $$->res_type = $1->res_type; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3);   }
             | factor
             ;
 
-factor      : INT                            { PARSER_INIT($$); $$->arg_type = IR_ARG_WORD; $$->type = type_int; $$->word = $1; }
-            | FLOAT                          { PARSER_INIT($$); $$->arg_type = IR_ARG_WORD; $$->type = type_float; $$->word = $1; }
-            | ARRAY                          { PARSER_INIT($$); $$->arg_type = IR_ARG_DATA; $$->type = type_array; $$->data.ptr = $1.ptr; $$->data.size = $1.size; }
-            | ID '(' args ')'                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->type = type_int;$$->call.func = func_new(strdup($1)); $$->call.arg = $3; }
-            | ID                             { PARSER_INIT($$); $$->arg_type = IR_ARG_PARAM; $$->type = type_int; $$->param = parameter_get(param_cur, $1); }
+factor      : INT                            { PARSER_INIT($$); $$->arg_type = IR_ARG_WORD; $$->res = IR_RES_STA; $$->res_type = type_int; $$->word = $1; }
+            | FLOAT                          { PARSER_INIT($$); $$->arg_type = IR_ARG_WORD; $$->res = IR_RES_STA; $$->res_type = type_float; $$->word = $1; }
+            | ARRAY                          { PARSER_INIT($$); $$->arg_type = IR_ARG_DATA; $$->res = IR_RES_STA; $$->res_type = type_array; $$->data.ptr = $1.ptr; $$->data.size = $1.size; }
+            | ID '(' args ')'                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->res = IR_RES_DYN; $$->res_type = NULL;$$->call.func = func_new(strdup($1)); $$->call.args = *$3; }
+            | ID                             { PARSER_INIT($$); set_arg($$, $1); }
             ;
 
-args        : expr ',' args                { $$ = $1; $$->next = $3; }
-            | expr
+args        : args ',' expr                  { $$ = $1; list_add($$, $3); }
+            | expr                           { PARSER_INIT($$); list_add($$, $1); }
             ;
 %%

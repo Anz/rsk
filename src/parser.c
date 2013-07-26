@@ -69,6 +69,7 @@
 #line 1 "src/parser.y"
 
 
+#include "map.h"
 #include "elf.h"
 #include "x86.h"
 #include "ir.h"
@@ -84,7 +85,7 @@ extern int yylineno;
 
 struct ir_func* func_first = NULL;
 
-struct ir_param* param_cur = NULL;
+struct map* params_cur = NULL;
 
 struct ir_type* type_int = NULL;
 struct ir_type* type_float = NULL;
@@ -94,21 +95,6 @@ void yyerror(const char *str) {
    fprintf(stderr,"parser error on line %i: %s\n", yylineno,str);
    exit(1);
 }
-
-struct ir_param* parameter_get(struct ir_param* param, char* name) {
-   int index = 0;
-   for (struct ir_param* p = param; p != NULL; p = p->next) {
-      if (strcmp(p->name, name) == 0) {
-         return p;
-      }
-      index++;
-   }
-      
-   char error[512];
-   sprintf(error, "parameter '%s' not defined", name); 
-   yyerror(error);
-}
-
 
 struct ir_func* func_get(char* name) {
    for (struct ir_func* f = func_first; f != NULL; f = f->next) {
@@ -131,6 +117,28 @@ struct ir_func* func_new(char* name) {
    }
    
    return f;
+}
+
+static void set_arg(struct ir_arg* arg, char* name) {
+   int* index = (int*) map_get(params_cur, name, strlen(name) + 1);
+   
+   // parameter
+   if (index != NULL) {
+      arg->arg_type = IR_ARG_PARAM;
+      arg->param = *index;
+      
+      arg->res = IR_RES_STA;
+      arg->res_type = type_int;
+      return;
+   }
+   
+   // func
+   struct ir_func* func = func_new(strdup(name));
+   arg->arg_type = IR_ARG_CALL;
+   arg->call.func = func;
+   
+   arg->res = IR_RES_STA;
+   arg->res_type = type_array;
 }
 
 int yyparse ();
@@ -159,7 +167,7 @@ struct ir_func* parse(FILE* in) {
 
 
 /* Line 268 of yacc.c  */
-#line 163 "src/parser.c"
+#line 171 "src/parser.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -200,7 +208,7 @@ typedef union YYSTYPE
 {
 
 /* Line 293 of yacc.c  */
-#line 95 "src/parser.y"
+#line 103 "src/parser.y"
 
    int word;
    char* str;
@@ -209,13 +217,14 @@ typedef union YYSTYPE
       size_t size;
    } data;
    struct ir_func* func;
-   struct ir_param* param;
+   struct map* params;
    struct ir_arg* arg;
+   struct list* list;
 
 
 
 /* Line 293 of yacc.c  */
-#line 219 "src/parser.c"
+#line 228 "src/parser.c"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -227,7 +236,7 @@ typedef union YYSTYPE
 
 
 /* Line 343 of yacc.c  */
-#line 231 "src/parser.c"
+#line 240 "src/parser.c"
 
 #ifdef short
 # undef short
@@ -446,7 +455,7 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  6
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   31
+#define YYLAST   26
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  15
@@ -514,16 +523,16 @@ static const yytype_int8 yyrhs[] =
        7,    -1,     7,    -1,    20,     3,    21,    -1,    20,     4,
       21,    -1,    21,    -1,    21,     5,    22,    -1,    21,     6,
       22,    -1,    22,    -1,     8,    -1,     9,    -1,    10,    -1,
-       7,    12,    23,    13,    -1,     7,    -1,    20,    14,    23,
+       7,    12,    23,    13,    -1,     7,    -1,    23,    14,    20,
       -1,    20,    -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,   118,   118,   119,   122,   125,   126,   129,   130,   133,
-     134,   135,   138,   139,   140,   143,   144,   145,   146,   147,
-     150,   151
+       0,   128,   128,   129,   132,   135,   136,   139,   140,   143,
+     144,   145,   148,   149,   150,   153,   154,   155,   156,   157,
+     160,   161
 };
 #endif
 
@@ -573,30 +582,30 @@ static const yytype_uint8 yydefact[] =
        0,     6,     0,     3,     0,     0,     1,     2,     8,     0,
        0,     5,     0,    19,    15,    16,    17,     4,    11,    14,
        7,     0,     0,     0,     0,     0,    21,     0,     9,    10,
-      12,    13,     0,    18,    20
+      12,    13,    18,     0,    20
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     2,     3,     5,     9,    26,    18,    19,    27
+      -1,     2,     3,     5,     9,    17,    18,    19,    27
 };
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-#define YYPACT_NINF -7
+#define YYPACT_NINF -22
 static const yytype_int8 yypact[] =
 {
-       3,     7,     2,    -7,    13,    14,    -7,    -7,    -7,    -6,
-      -4,    -7,    17,    15,    -7,    -7,    -7,     9,    10,    -7,
-      -7,    -4,    -4,    -4,    -4,    -4,    -3,     1,    10,    10,
-      -7,    -7,    -4,    -7,    -7
+       4,     5,     1,   -22,    13,    12,   -22,   -22,   -22,    -7,
+      -5,   -22,    17,    14,   -22,   -22,   -22,     6,     8,   -22,
+     -22,    -5,    -5,    -5,    -5,    -5,     6,     2,     8,     8,
+     -22,   -22,   -22,    -5,     6
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-      -7,    -7,    19,    -7,    -7,    16,    -5,    -2,    -1
+     -22,   -22,    23,   -22,   -22,   -21,    -4,    -3,   -22
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
@@ -605,24 +614,22 @@ static const yytype_int8 yypgoto[] =
 #define YYTABLE_NINF -1
 static const yytype_uint8 yytable[] =
 {
-      22,    23,     6,    13,    14,    15,    16,    11,    12,     1,
-       1,    32,    22,    23,    33,    24,    25,    28,    29,     4,
-       8,     7,    30,    31,    20,    10,    17,    21,     0,     0,
-       0,    34
+      26,     6,    13,    14,    15,    16,    11,    12,     1,    22,
+      23,     1,    34,    24,    25,    32,    33,     4,    28,    29,
+       8,    30,    31,    10,    20,     7,    21
 };
 
 #define yypact_value_is_default(yystate) \
-  ((yystate) == (-7))
+  ((yystate) == (-22))
 
 #define yytable_value_is_error(yytable_value) \
   YYID (0)
 
-static const yytype_int8 yycheck[] =
+static const yytype_uint8 yycheck[] =
 {
-       3,     4,     0,     7,     8,     9,    10,    13,    14,     7,
-       7,    14,     3,     4,    13,     5,     6,    22,    23,    12,
-       7,     2,    24,    25,     7,    11,    10,    12,    -1,    -1,
-      -1,    32
+      21,     0,     7,     8,     9,    10,    13,    14,     7,     3,
+       4,     7,    33,     5,     6,    13,    14,    12,    22,    23,
+       7,    24,    25,    11,     7,     2,    12
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
@@ -632,7 +639,7 @@ static const yytype_uint8 yystos[] =
        0,     7,    16,    17,    12,    18,     0,    17,     7,    19,
       11,    13,    14,     7,     8,     9,    10,    20,    21,    22,
        7,    12,     3,     4,     5,     6,    20,    23,    21,    21,
-      22,    22,    14,    13,    23
+      22,    22,    13,    14,    20
 };
 
 #define yyerrok		(yyerrstatus = 0)
@@ -1469,112 +1476,119 @@ yyreduce:
         case 4:
 
 /* Line 1806 of yacc.c  */
-#line 122 "src/parser.y"
-    { (yyval.func) = func_new((yyvsp[(1) - (4)].str)); (yyval.func)->param = (yyvsp[(2) - (4)].param); (yyval.func)->value = (yyvsp[(4) - (4)].arg); }
+#line 132 "src/parser.y"
+    { (yyval.func) = func_new((yyvsp[(1) - (4)].str)); (yyval.func)->params = *(yyvsp[(2) - (4)].params); (yyval.func)->value = *(yyvsp[(4) - (4)].arg); }
     break;
 
   case 5:
 
 /* Line 1806 of yacc.c  */
-#line 125 "src/parser.y"
-    { (yyval.param) = param_cur; }
+#line 135 "src/parser.y"
+    { (yyval.params) = (yyvsp[(2) - (3)].params); params_cur = (yyval.params); }
     break;
 
   case 6:
 
 /* Line 1806 of yacc.c  */
-#line 126 "src/parser.y"
-    { (yyval.param) = NULL; param_cur = NULL; }
+#line 136 "src/parser.y"
+    { PARSER_INIT((yyval.params)); map_init((yyval.params)); params_cur = (yyval.params); }
     break;
 
   case 7:
 
 /* Line 1806 of yacc.c  */
-#line 129 "src/parser.y"
-    { PARSER_INIT((yyval.param)); (yyval.param)->name = strdup((yyvsp[(3) - (3)].str)); (yyvsp[(1) - (3)].param)->next = (yyval.param); (yyval.param)->index = (yyvsp[(1) - (3)].param)->index + 1; }
+#line 139 "src/parser.y"
+    { int* index = malloc(4); *index = (yyvsp[(1) - (3)].params)->l.size; map_set((yyvsp[(1) - (3)].params), strdup((yyvsp[(3) - (3)].str)), strlen((yyvsp[(3) - (3)].str)) + 1, index); }
     break;
 
   case 8:
 
 /* Line 1806 of yacc.c  */
-#line 130 "src/parser.y"
-    { PARSER_INIT((yyval.param)); (yyval.param)->name = strdup((yyvsp[(1) - (1)].str)); (yyval.param)->index = 0; param_cur = (yyval.param); }
+#line 140 "src/parser.y"
+    { PARSER_INIT((yyval.params)); map_init((yyval.params)); int* index = malloc(4); *index = (yyval.params)->l.size; map_set((yyval.params), strdup((yyvsp[(1) - (1)].str)), strlen((yyvsp[(1) - (1)].str)) + 1, index); }
     break;
 
   case 9:
 
 /* Line 1806 of yacc.c  */
-#line 133 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = (yyvsp[(1) - (3)].arg)->type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
+#line 143 "src/parser.y"
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->res = IR_RES_STA; (yyval.arg)->res_type = (yyvsp[(1) - (3)].arg)->res_type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); list_add(&(yyval.arg)->call.args, (yyvsp[(1) - (3)].arg)); list_add(&(yyval.arg)->call.args, (yyvsp[(3) - (3)].arg)); }
     break;
 
   case 10:
 
 /* Line 1806 of yacc.c  */
-#line 134 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = (yyvsp[(1) - (3)].arg)->type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
+#line 144 "src/parser.y"
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->res = IR_RES_STA; (yyval.arg)->res_type = (yyvsp[(1) - (3)].arg)->res_type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); list_add(&(yyval.arg)->call.args, (yyvsp[(1) - (3)].arg)); list_add(&(yyval.arg)->call.args, (yyvsp[(3) - (3)].arg)); }
     break;
 
   case 12:
 
 /* Line 1806 of yacc.c  */
-#line 138 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = (yyvsp[(1) - (3)].arg)->type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
+#line 148 "src/parser.y"
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->res = IR_RES_STA; (yyval.arg)->res_type = (yyvsp[(1) - (3)].arg)->res_type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); list_add(&(yyval.arg)->call.args, (yyvsp[(1) - (3)].arg)); list_add(&(yyval.arg)->call.args, (yyvsp[(3) - (3)].arg)); }
     break;
 
   case 13:
 
 /* Line 1806 of yacc.c  */
-#line 139 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = (yyvsp[(1) - (3)].arg)->type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); (yyval.arg)->call.arg = (yyvsp[(1) - (3)].arg); (yyvsp[(1) - (3)].arg)->next = (yyvsp[(3) - (3)].arg); }
+#line 149 "src/parser.y"
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->res = IR_RES_STA; (yyval.arg)->res_type = (yyvsp[(1) - (3)].arg)->res_type; (yyval.arg)->call.func = func_new((yyvsp[(2) - (3)].str)); list_add(&(yyval.arg)->call.args, (yyvsp[(1) - (3)].arg)); list_add(&(yyval.arg)->call.args, (yyvsp[(3) - (3)].arg));   }
     break;
 
   case 15:
 
 /* Line 1806 of yacc.c  */
-#line 143 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_WORD; (yyval.arg)->type = type_int; (yyval.arg)->word = (yyvsp[(1) - (1)].word); }
+#line 153 "src/parser.y"
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_WORD; (yyval.arg)->res = IR_RES_STA; (yyval.arg)->res_type = type_int; (yyval.arg)->word = (yyvsp[(1) - (1)].word); }
     break;
 
   case 16:
 
 /* Line 1806 of yacc.c  */
-#line 144 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_WORD; (yyval.arg)->type = type_float; (yyval.arg)->word = (yyvsp[(1) - (1)].word); }
+#line 154 "src/parser.y"
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_WORD; (yyval.arg)->res = IR_RES_STA; (yyval.arg)->res_type = type_float; (yyval.arg)->word = (yyvsp[(1) - (1)].word); }
     break;
 
   case 17:
 
 /* Line 1806 of yacc.c  */
-#line 145 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_DATA; (yyval.arg)->type = type_array; (yyval.arg)->data.ptr = (yyvsp[(1) - (1)].data).ptr; (yyval.arg)->data.size = (yyvsp[(1) - (1)].data).size; }
+#line 155 "src/parser.y"
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_DATA; (yyval.arg)->res = IR_RES_STA; (yyval.arg)->res_type = type_array; (yyval.arg)->data.ptr = (yyvsp[(1) - (1)].data).ptr; (yyval.arg)->data.size = (yyvsp[(1) - (1)].data).size; }
     break;
 
   case 18:
 
 /* Line 1806 of yacc.c  */
-#line 146 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->type = type_int;(yyval.arg)->call.func = func_new(strdup((yyvsp[(1) - (4)].str))); (yyval.arg)->call.arg = (yyvsp[(3) - (4)].arg); }
+#line 156 "src/parser.y"
+    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_CALL; (yyval.arg)->res = IR_RES_DYN; (yyval.arg)->res_type = NULL;(yyval.arg)->call.func = func_new(strdup((yyvsp[(1) - (4)].str))); (yyval.arg)->call.args = *(yyvsp[(3) - (4)].list); }
     break;
 
   case 19:
 
 /* Line 1806 of yacc.c  */
-#line 147 "src/parser.y"
-    { PARSER_INIT((yyval.arg)); (yyval.arg)->arg_type = IR_ARG_PARAM; (yyval.arg)->type = type_int; (yyval.arg)->param = parameter_get(param_cur, (yyvsp[(1) - (1)].str)); }
+#line 157 "src/parser.y"
+    { PARSER_INIT((yyval.arg)); set_arg((yyval.arg), (yyvsp[(1) - (1)].str)); }
     break;
 
   case 20:
 
 /* Line 1806 of yacc.c  */
-#line 150 "src/parser.y"
-    { (yyval.arg) = (yyvsp[(1) - (3)].arg); (yyval.arg)->next = (yyvsp[(3) - (3)].arg); }
+#line 160 "src/parser.y"
+    { (yyval.list) = (yyvsp[(1) - (3)].list); list_add((yyval.list), (yyvsp[(3) - (3)].arg)); }
+    break;
+
+  case 21:
+
+/* Line 1806 of yacc.c  */
+#line 161 "src/parser.y"
+    { PARSER_INIT((yyval.list)); list_add((yyval.list), (yyvsp[(1) - (1)].arg)); }
     break;
 
 
 
 /* Line 1806 of yacc.c  */
-#line 1578 "src/parser.c"
+#line 1592 "src/parser.c"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1805,6 +1819,6 @@ yyreturn:
 
 
 /* Line 2067 of yacc.c  */
-#line 153 "src/parser.y"
+#line 163 "src/parser.y"
 
 

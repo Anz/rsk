@@ -8,20 +8,14 @@ struct text_ref {
    struct text_ref* next;
 };
 
-void x86_func_compile(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count);
+void x86_func_compile(struct text_ref** refs, struct nr* nr, struct ir_arg arg, int arg_count);
 
-static void x86_load_param(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
-   if (arg == NULL) {
-      return;
+static void x86_load_param(struct text_ref** refs, struct nr* nr, struct list args, int arg_count) {
+   for (int i = args.size - 1; i >= 0; i--) {
+      struct ir_arg arg =  *(struct ir_arg*) list_get(&args, i);
+      x86_func_compile(refs, nr, arg, arg_count);
    }
-   x86_load_param(refs, nr, arg->next, arg_count);
-   x86_func_compile(refs, nr, arg, arg_count);
 }
-
-/*void x86_write(struct nr* nr, void* data, size_t size) {
-   memcpy(nr->text+nr->text_size, data, size);
-   nr->text_size += size;
-}*/
 
 void x86_loadp(struct nr* nr, int param) { 
    char code[] = { 0x8b, 0x55, (1+param)*sizeof(int), 0x52 };
@@ -54,37 +48,40 @@ void x86_loadd(struct nr* nr, void* ptr) {
       buffer_write(&nr->text, push, sizeof(push));
 }
 
-void x86_int_add(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
-   x86_load_param(refs, nr, arg->call.arg, arg_count);
+void x86_int_add(struct text_ref** refs, struct nr* nr, struct ir_arg arg, int arg_count) {
+   x86_load_param(refs, nr, arg.call.args, arg_count);
    
    char code[] = { 0x5A, 0x58, 0x01, 0xD0, 0x50 };
    buffer_write(&nr->text, code, sizeof(code));
 }
 
-void x86_int_sub(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
-   x86_load_param(refs, nr, arg->call.arg, arg_count);
+void x86_int_sub(struct text_ref** refs, struct nr* nr, struct ir_arg arg, int arg_count) {
+   x86_load_param(refs, nr, arg.call.args, arg_count);
    
    char code[] = { 0x5A, 0x58, 0x29, 0xD0, 0x50 };
    buffer_write(&nr->text, code, sizeof(code));
 }
 
-void x86_int_mul(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
-   x86_load_param(refs, nr, arg->call.arg, arg_count);
+void x86_int_mul(struct text_ref** refs, struct nr* nr, struct ir_arg arg, int arg_count) {
+   x86_load_param(refs, nr, arg.call.args, arg_count);
    
    char code[] = { 0x5A, 0x58, 0x0F, 0xAF, 0xc2, 0x50 };
    buffer_write(&nr->text, code, sizeof(code));
 }
 
-void x86_int_div(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
-   x86_load_param(refs, nr, arg->call.arg, arg_count);
+void x86_int_div(struct text_ref** refs, struct nr* nr, struct ir_arg arg, int arg_count) {
+   x86_load_param(refs, nr, arg.call.args, arg_count);
    
    char code[] = { 0x5B, 0x58, 0x99, 0xF7, 0xFB, 0x50 };
    buffer_write(&nr->text, code, sizeof(code));
 }
 
-void x86_array_add(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
-   for (struct ir_arg* a = arg->call.arg; a != NULL; a = a->next) {
-      x86_func_compile(refs, nr, a, arg_count);
+void x86_array_add(struct text_ref** refs, struct nr* nr, struct ir_arg arg, int arg_count) {
+   struct list args = arg.call.args;
+   
+   for (int i = 0; i < args.size; i++) {
+      struct ir_arg* arg =  (struct ir_arg*) list_get(&args, i);
+      x86_func_compile(refs, nr, *arg, arg_count);
    }
 }
 
@@ -97,38 +94,35 @@ void* funcs_ow[][2] = {
    { "array+", &x86_array_add },
 };
 
-void x86_call(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
-   struct ir_func* func = arg->call.func;
+void x86_call(struct text_ref** refs, struct nr* nr, struct ir_arg arg, int arg_count) {
+   struct ir_func* func = arg.call.func;
    
    // call function
-   if (strcmp("+", func->name) == 0) func = arg->type->add;
-   if (strcmp("-", func->name) == 0) func = arg->type->sub;
-   if (strcmp("*", func->name) == 0) func = arg->type->mul;
-   if (strcmp("/", func->name) == 0) func = arg->type->div;
+   if (strcmp("+", func->name) == 0) func = arg.res_type->add;
+   if (strcmp("-", func->name) == 0) func = arg.res_type->sub;
+   if (strcmp("*", func->name) == 0) func = arg.res_type->mul;
+   if (strcmp("/", func->name) == 0) func = arg.res_type->div;
 
    // native function overwrite
    for (int i = 0; i < sizeof(funcs_ow) / sizeof(funcs_ow[0]); i++) {
       char* name = (char*)funcs_ow[i][0];
-      void (*f)(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) = funcs_ow[i][1];
+      void (*f)(struct text_ref**, struct nr*,  struct ir_arg, int) = funcs_ow[i][1];
       if (strcmp(name, func->name) == 0) {
          f(refs, nr, arg, arg_count);
          return;
       }
    }
    
-   x86_load_param(refs, nr, arg->call.arg, arg_count);
+   x86_load_param(refs, nr, arg.call.args, arg_count);
    
    // generic function
    char call[] = { 0xE8, 0x0, 0x0, 0x0, 0x0 };
    buffer_write(&nr->text, call, sizeof(call));
    char cleanup[] = { 0x83, 0xC4 };
    buffer_write(&nr->text, cleanup, sizeof(cleanup));
-   char param = 0;
-   for (struct ir_param* p = func->param; p != NULL; p = p->next) {
-      param += sizeof(int*);
-   }
+   char param = sizeof(int*) * func->params.l.size;
    buffer_write(&nr->text, (char*)&param, sizeof(param));
-   char push[] = { 0x90 };
+   char push[] = { 0x90 }; // TODO: delete NOP = 0x90
    buffer_write(&nr->text, push, sizeof(push));
    
    struct text_ref* ref = malloc(sizeof(struct text_ref));
@@ -144,24 +138,24 @@ void x86_call(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg
    }
 }
 
-void x86_func_compile(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {   
-   switch (arg->arg_type) {
+void x86_func_compile(struct text_ref** refs, struct nr* nr, struct ir_arg arg, int arg_count) {
+   switch (arg.arg_type) {
       case IR_ARG_CALL: {         
          x86_call(refs, nr, arg, arg_count);
          break;
       }
-      case IR_ARG_PARAM: {      
-         x86_loadp(nr, arg_count - arg->param->index);
+      case IR_ARG_PARAM: {
+         x86_loadp(nr, arg_count - arg.param);
          break;
       }
       case IR_ARG_WORD: {
-         x86_loadv(nr, arg->word, false);
+         x86_loadv(nr, arg.word, false);
          break;
       }
       case IR_ARG_DATA: {
          x86_loadv(nr, 0x08048274+nr->data.size, true);
-         buffer_writew(&nr->data, arg->data.size);
-         buffer_write(&nr->data, arg->data.ptr, arg->data.size);
+         buffer_writew(&nr->data, arg.data.size);
+         buffer_write(&nr->data, arg.data.ptr, arg.data.size);
          break;
       }
       default:
@@ -179,7 +173,6 @@ struct nr x86_compile(struct ir_func* funcs) {
    buffer_init(&nr.data, 512);
    
    char frame_start[] = { 0x55, 0x89, 0xE5};
-   //char frame_stop[] = { 0x58, 0x5D, 0xC3};
    char frame_stop[] = { 0x5D, 0xC3};
    
    struct text_ref* refs = NULL;
@@ -189,12 +182,17 @@ struct nr x86_compile(struct ir_func* funcs) {
       memset(&_print, 0, sizeof(_print));
       _print.name = "main";
       
+      struct ir_arg _stdin;
+      _stdin.arg_type = IR_ARG_WORD;
+      _stdin.word = 5;
+      
       struct ir_arg _call;
       memset(&_call, 0, sizeof(_call));
       _call.arg_type = IR_ARG_CALL;
       _call.call.func = &_print;
+      list_add(&_call.call.args, &_stdin);
       
-      x86_call(&refs, &nr, &_call, 0);
+      x86_call(&refs, &nr, _call, 0);
       
       // end
       char code[] = {
@@ -206,8 +204,10 @@ struct nr x86_compile(struct ir_func* funcs) {
    }
    
    for (struct ir_func* f = funcs; f != NULL; f = f->next) {
-      if (f->value == NULL) continue;
-      
+      if (f->value.arg_type == 0) {
+         continue;
+      }
+   
       symbol_t* sym = malloc(sizeof(symbol_t));
       memset(sym, 0, sizeof(sym));
       sym->name = f->name;
@@ -216,10 +216,7 @@ struct nr x86_compile(struct ir_func* funcs) {
    
       buffer_write(&nr.text, frame_start, sizeof(frame_start));
       
-      int count = 0;
-      for (struct ir_param* p = f->param; p != NULL; p = p->next) {
-         count++;
-      }
+      int count = f->params.l.size;
       
       x86_func_compile(&refs, &nr, f->value, count);
       

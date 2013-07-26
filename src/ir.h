@@ -6,6 +6,12 @@
 #define IR_ARG_WORD  0x3
 #define IR_ARG_DATA  0x4
 
+#define IR_RES_UNK   0x0
+#define IR_RES_DYN   0x1
+#define IR_RES_STA   0x2
+
+#include "list.h"
+#include "map.h"
 #include <stdlib.h>
 
 struct ir_func;
@@ -18,33 +24,31 @@ struct ir_type {
 };
 
 struct ir_arg {
-   struct ir_type* type;
    int arg_type;
    union {
       int word;
-      struct ir_param* param;
+      int param;
       struct {
          struct ir_func* func;
-         struct ir_arg* arg;
+         struct list args;
       } call;
       struct {
          void* ptr;
          size_t size;
       } data;
    };
-   struct ir_arg* next;
-};
-
-struct ir_param {
-   char* name;
-   int index;
-   struct ir_param* next;
+   
+   int res;
+   union {
+      struct ir_type* res_type;
+      int res_param;
+   };
 };
 
 struct ir_func {
    char* name;
-   struct ir_param* param;
-   struct ir_arg* value;
+   struct map params;
+   struct ir_arg value;
    struct ir_func* next;
 };
 
