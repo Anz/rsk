@@ -18,20 +18,22 @@ void map_init(struct map* m) {
 }
 
 void map_clear(struct map* m) {
-   while (m->l.size > 0) {
-      free(list_get(&m->l, 0));
-      list_remove(&m->l, 0);
+   for (int i = 0; i < m->l.size; i++) {
+      free(list_get(&m->l, i));
    }
+   
+   list_clear(&m->l);
 }
 
 void* map_get(struct map* m, void* key, size_t key_size) {
    struct map_entry* e = map_get_entry(m, key, key_size);
+   void* data = NULL;
    
    if (e != NULL) {
-      return e->data;
+      data = e->data;
    }
    
-   return NULL;
+   return data;
 }
 
 void map_set(struct map* m, void* key, size_t key_size, void* data) {
@@ -48,3 +50,9 @@ void map_set(struct map* m, void* key, size_t key_size, void* data) {
    list_add(&m->l, e);
 }
 
+void map_foreach(struct map* m, void (*f)(void* key, size_t key_size, void* data)) {
+   for (struct list_item* item = m->l.first; item != NULL; item = item->next) {
+      struct map_entry* entry = (struct map_entry*) item->data;
+      f(entry->key, entry->key_size, entry->data);
+   }
+}

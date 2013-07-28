@@ -1,6 +1,7 @@
 #ifndef X86_H
 #define X86_H
 
+#include "map.h"
 #include "ir.h"
 #include "elf.h"
 #include "buffer.h"
@@ -12,7 +13,7 @@ struct nr {
    struct buffer data;
 };
 
-struct nr x86_compile(struct ir_func* funcs);
+struct nr x86_compile(struct map funcs);
 
 #endif
 

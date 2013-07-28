@@ -1,7 +1,9 @@
+#include "map.h"
 #include "elf.h"
 #include "ir.h"
 #include "x86.h"
 #include "parser.h"
+#include "semantic.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,49 +13,51 @@
 #include <getopt.h>
 #include <stdbool.h>
 
-extern struct ir_func* parse();
+extern void parse(FILE*, struct map*);
 extern symbol_t* yysymbols();
 extern char* yycode();
 
-void print_arg(struct ir_arg arg) {
-   switch (arg.arg_type) {
+void print_arg(struct ir_arg* arg) {
+   switch (arg->arg_type) {
       case IR_ARG_CALL:
-         for (int i = 0; i < arg.call.args.size; i++) {
-            struct ir_arg* a = (struct ir_arg*) list_get(&arg.call.args, i);
-            print_arg(*a);
+         for (int i = 0; i < arg->call.args.size; i++) {
+            struct ir_arg* a = (struct ir_arg*) list_get(&arg->call.args, i);
+            print_arg(a);
          }
-         printf("\tcall %s\n", arg.call.func->name);
+         printf("\tcall %s", arg->call.func->name);
          break;
-      case IR_ARG_WORD: printf("\tload #%i\n", arg.word); break;
-      case IR_ARG_PARAM: printf("\tload %i\n", arg.param); break;
-      case IR_ARG_DATA: printf("\tload '%s'\n", (char*)arg.data.ptr); break;
-      default: printf("\tunknown %i\n", arg.arg_type); break;
+      case IR_ARG_WORD: printf("\tload #%i", arg->word); break;
+      case IR_ARG_PARAM: printf("\tload %i", arg->param); break;
+      case IR_ARG_DATA: printf("\tload '%s'", (char*)arg->data.ptr); break;
+      default: printf("\tunknown %i", arg->arg_type); break;
+   }
+   
+   switch (arg->res) {
+      case IR_RES_STA: printf(" (type: %s)\n", arg->res_type->add->name); break;
+      case IR_RES_DYN: printf(" (type: param #%i)\n", arg->res_param); break;
+      default: printf(" (type: unknown\n");
    }
 }
 
 void print_func(struct ir_func* f) {
-   if (f->value.arg_type == 0) {
+   if (f->value == NULL) {
       return;
    }
 
    printf("%s:\n", f->name);
    print_arg(f->value);
    printf("\n");
-   
-   /*struct ir_arg value = f->value;
-   
-   for (int i = 0; i >= 0; i--) {
-      struct ir_arg arg =  *(struct ir_arg*) list_get(&args, i);
-      x86_func_compile(refs, nr, arg, arg_count);
-   }*/
+}
+
+static void do_semantic_check(void* key, size_t key_size, void* data) {
+   semantic_check((struct ir_func*)data);
 }
 
 void print_usage() {
     printf("Usage: rev [options] output files ...\n"
-           "       -f, --format (elf|pe)\n"
-           "       -a, --arch (x86| x64|arm)\n"
-           "       -a, --api (linux|windows)\n"
-           "       -o, --object (rel|lib|shared|exe)\n");
+           "       -i <input>    source file\n"
+           "       -o <ouput>    output binary\n"
+           "       -v            verbose\n");
 }
 
 int main (int argc, char *argv[]) {
@@ -80,20 +84,33 @@ int main (int argc, char *argv[]) {
       return 0;
    }
    
-   // compile into intermediate code
-   struct ir_func* funcs = parse(in);
+   // function map
+   struct map funcs;
+   map_init(&funcs);
+   
+   // compile into intermediate representation
+   parse(in, &funcs);
+   fclose(in);
+   
+   // do semantic check
+   map_foreach(&funcs, do_semantic_check);
    
    // print tree
    if (verbose) {
-      for (struct ir_func* f = funcs; f != NULL; f = f->next) {
-         print_func(f);
+      for (struct list_item* item = funcs.l.first; item != NULL; item = item->next) {
+         struct map_entry* entry = (struct map_entry*) item->data;
+         print_func(entry->data);
       }
    }
    
    // compile into native code
    struct nr nr = x86_compile(funcs);
-   
+
    elf_write(out, *nr.symbols, &nr.text, &nr.data);
    fclose(out);
+   
+   // TODO: free all func names!
+   map_clear(&funcs);
+   
    return 0;
 }

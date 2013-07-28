@@ -16,6 +16,11 @@
 
 struct ir_func;
 
+struct ir_error {
+   int lineno;
+   char* msg;
+}
+
 struct ir_type {
    struct ir_func* add;
    struct ir_func* sub;
@@ -48,8 +53,7 @@ struct ir_arg {
 struct ir_func {
    char* name;
    struct map params;
-   struct ir_arg value;
-   struct ir_func* next;
+   struct ir_arg* value;
 };
 
 

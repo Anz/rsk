@@ -10,6 +10,7 @@ static struct list_item* list_get_element(struct list* l, int index) {
    for (int i = 0; i < index; i++) {
       item = item->next;
    }
+
    return item;
 }
 
@@ -35,7 +36,7 @@ void* list_get(struct list* l, int index) {
    if (item == NULL) {
       return NULL;
    }
-   
+
    return item->data;
 }
 
