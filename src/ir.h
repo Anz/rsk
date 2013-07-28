@@ -19,13 +19,21 @@ struct ir_func;
 struct ir_error {
    int lineno;
    char* msg;
-}
+};
 
 struct ir_type {
    struct ir_func* add;
    struct ir_func* sub;
    struct ir_func* mul;
    struct ir_func* div;
+};
+
+struct ir_var_type {
+   int type;
+   union {
+      struct ir_type* sta;
+      int dyn;
+   };
 };
 
 struct ir_arg {
@@ -43,11 +51,7 @@ struct ir_arg {
       } data;
    };
    
-   int res;
-   union {
-      struct ir_type* res_type;
-      int res_param;
-   };
+   struct ir_var_type type;
 };
 
 struct ir_func {

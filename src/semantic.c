@@ -21,20 +21,23 @@ static struct ir_arg* semantic_arg_check(struct ir_arg* arg) {
          else if (strcmp("/", func->name) == 0) res =  list_get(&arg->call.args, 0);
          else res = semantic_check(arg->call.func);
          
-         arg->res = res->res;
-         switch (res->res) {
+         arg->type.type = res->type.type;
+         switch (res->type.type) {
             case IR_RES_UNK: break;
-            case IR_RES_STA: arg->res_type = res->res_type; break;
-            case IR_RES_DYN: arg->res_param = res->res_param; break;
+            case IR_RES_STA: arg->type.sta = res->type.sta; break;
+            case IR_RES_DYN: arg->type.dyn = res->type.dyn; break;
          }
+         // TODO replase above with:
+         // memcpy(&arg.type, &res.type);
+         
          return arg;
       }
-      default: printf("\error %i\n", arg->arg_type); break;
+      default: printf("\error %i\n", arg->type.type); break;
    }
 }
 
 struct ir_arg* semantic_check(struct ir_func* f) {
-   if (f->value == NULL || f->value->res != IR_RES_UNK) {
+   if (f->value == NULL || f->value->type.type != IR_RES_UNK) {
       return f->value;
    }
    

@@ -32,9 +32,9 @@ void print_arg(struct ir_arg* arg) {
       default: printf("\tunknown %i", arg->arg_type); break;
    }
    
-   switch (arg->res) {
-      case IR_RES_STA: printf(" (type: %s)\n", arg->res_type->add->name); break;
-      case IR_RES_DYN: printf(" (type: param #%i)\n", arg->res_param); break;
+   switch (arg->type.type) {
+      case IR_RES_STA: printf(" (type: %s)\n", arg->type.sta->add->name); break;
+      case IR_RES_DYN: printf(" (type: param #%i)\n", arg->type.dyn); break;
       default: printf(" (type: unknown\n");
    }
 }
@@ -84,6 +84,10 @@ int main (int argc, char *argv[]) {
       return 0;
    }
    
+   // error list
+   struct list errors;
+   list_init(&errors);
+   
    // function map
    struct map funcs;
    map_init(&funcs);
@@ -102,6 +106,10 @@ int main (int argc, char *argv[]) {
          print_func(entry->data);
       }
    }
+   
+   // print error
+   // TODO print errors
+   list_clear(&errors);
    
    // compile into native code
    struct nr nr = x86_compile(funcs);

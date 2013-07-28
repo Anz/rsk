@@ -98,10 +98,10 @@ void x86_call(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg
    struct ir_func* func = arg->call.func;
    
    // call function
-   if (strcmp("+", func->name) == 0) func = arg->res_type->add;
-   if (strcmp("-", func->name) == 0) func = arg->res_type->sub;
-   if (strcmp("*", func->name) == 0) func = arg->res_type->mul;
-   if (strcmp("/", func->name) == 0) func = arg->res_type->div;
+   if (strcmp("+", func->name) == 0) func = arg->type.sta->add;
+   if (strcmp("-", func->name) == 0) func = arg->type.sta->sub;
+   if (strcmp("*", func->name) == 0) func = arg->type.sta->mul;
+   if (strcmp("/", func->name) == 0) func = arg->type.sta->div;
 
    // native function overwrite
    for (int i = 0; i < sizeof(funcs_ow) / sizeof(funcs_ow[0]); i++) {

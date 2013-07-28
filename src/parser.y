@@ -49,8 +49,8 @@ static void set_arg(struct ir_arg* arg, char* name) {
       arg->arg_type = IR_ARG_PARAM;
       arg->param = *index;
       
-      arg->res = IR_RES_DYN;
-      arg->res_param = *index;
+      arg->type.type = IR_RES_DYN;
+      arg->type.dyn = *index;
       return;
    }
    
@@ -59,8 +59,7 @@ static void set_arg(struct ir_arg* arg, char* name) {
    arg->arg_type = IR_ARG_CALL;
    arg->call.func = func;
    
-   arg->res = IR_RES_UNK;
-   arg->res_type = type_array; // TODO delete line
+   arg->type.type = IR_RES_UNK;
 }
 
 int yyparse ();
@@ -143,9 +142,9 @@ term        : term '*' factor                { PARSER_INIT($$); $$->arg_type = I
             | factor
             ;
 
-factor      : INT                            { PARSER_INIT($$); $$->arg_type = IR_ARG_WORD; $$->res = IR_RES_STA; $$->res_type = type_int; $$->word = $1; }
-            | FLOAT                          { PARSER_INIT($$); $$->arg_type = IR_ARG_WORD; $$->res = IR_RES_STA; $$->res_type = type_float; $$->word = $1; }
-            | ARRAY                          { PARSER_INIT($$); $$->arg_type = IR_ARG_DATA; $$->res = IR_RES_STA; $$->res_type = type_array; $$->data.ptr = $1.ptr; $$->data.size = $1.size; }
+factor      : INT                            { PARSER_INIT($$); $$->arg_type = IR_ARG_WORD; $$->type.type = IR_RES_STA; $$->type.sta = type_int; $$->word = $1; }
+            | FLOAT                          { PARSER_INIT($$); $$->arg_type = IR_ARG_WORD; $$->type.type = IR_RES_STA; $$->type.sta = type_float; $$->word = $1; }
+            | ARRAY                          { PARSER_INIT($$); $$->arg_type = IR_ARG_DATA; $$->type.type = IR_RES_STA; $$->type.sta = type_array; $$->data.ptr = $1.ptr; $$->data.size = $1.size; }
             | ID '(' args ')'                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($1); $$->call.args = *$3; }
             | ID                             { PARSER_INIT($$); set_arg($$, $1); }
             ;
