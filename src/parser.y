@@ -59,44 +59,50 @@ static void set_arg(struct ir_arg* arg, char* name) {
 
 int yyparse ();
 
+static struct ir_func* binary_op(char* name, struct ir_type* type) {
+   struct ir_param* a = malloc(sizeof(*a));
+   memset(a, 0, sizeof(*a));
+   a->name = "a";
+   a->type = type;
+   
+   struct ir_param* b = malloc(sizeof(*b));
+   memset(b, 0, sizeof(*b));
+   b->name = "b";
+   b->type = type;
+   
+   
+   // setup functions
+   struct ir_func* f = func_new(name);
+   f->type = type;
+   map_set(&f->params, a->name, strlen(a->name)+1, a);
+   map_set(&f->params, b->name, strlen(b->name)+1, b);
+   
+   return f;
+}
+
 void parse(FILE* in, struct map* f) {
    // init structures
    funcs = f;
    
-   // setup parameters
-   struct ir_param* p = malloc(sizeof(*p));
-   memset(p, 0, sizeof(*p));
-   
    // setup functions
-   struct ir_func* plus = func_new("+");
-   list_add(&plus->params.l, p);
-   list_add(&plus->params.l, p);
+   binary_op("+", NULL);
    
 
    // setup types
    type_int = malloc(sizeof(*type_int));
    type_int->name = "int";
-   type_int->add = func_new("int+");
-   type_int->add->type = type_int;
-   list_add(&type_int->add->params.l, p);
-   list_add(&type_int->add->params.l, p);
-   
-   type_int->sub = func_new("int-");
-   type_int->sub->type = type_int;
-   type_int->mul = func_new("int*");
-   type_int->mul->type = type_int;
-   type_int->div = func_new("int/");
-   type_int->div->type = type_int;
+   type_int->add = binary_op("int+", type_int);   
+   type_int->sub = binary_op("int-", type_int);
+   type_int->mul = binary_op("int*", type_int);
+   type_int->div = binary_op("int/", type_int);
    
    type_float = malloc(sizeof(*type_float));
    type_float->name = "float";
-   type_float->add = func_new("float+");
-   type_float->add->type = type_float;
+   type_float->add = binary_op("float+", type_float);
    
    type_array = malloc(sizeof(*type_array));
    type_array->name = "array";
-   type_array->add = func_new("array+");
-   type_array->add->type = type_array;
+   type_array->add = binary_op("array+", type_array);
 
    // parsing
    yyin = in;
@@ -148,13 +154,13 @@ parameter   : parameter ',' ID               { $$ = $1; struct ir_param* param; 
             | ID                             { PARSER_INIT($$); map_init($$); struct ir_param* param; PARSER_INIT(param); param->lineno = yylineno; param->name = strdup($1); param->index = $$->l.size; param->category = param->index; map_set($$, param->name, strlen(param->name) + 1, param); }
             ;
             
-expr        : expr '+' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
-            | expr '-' term                  { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
+expr        : expr '+' term                  { PARSER_INIT($$); $$->lineno = yylineno; $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
+            | expr '-' term                  { PARSER_INIT($$); $$->lineno = yylineno; $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
             | term
             ;
 
-term        : term '*' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
-            | term '/' factor                { PARSER_INIT($$); $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3);   }
+term        : term '*' factor                { PARSER_INIT($$);$$->lineno = yylineno;  $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
+            | term '/' factor                { PARSER_INIT($$);$$->lineno = yylineno;  $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3);   }
             | factor
             ;
 

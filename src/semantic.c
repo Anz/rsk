@@ -40,7 +40,7 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
             struct ir_error* error = malloc(sizeof(*error));
             memset(error, 0, sizeof(*error));
             error->msg = malloc(512);
-            sprintf(error->msg, "calling %s: wrong number of arguments", arg->call.func->name);
+            sprintf(error->msg, "calling %s: called with %i args, has %i", arg->call.func->name, arg->call.args.size, arg->call.func->params.l.size);
             error->lineno = arg->lineno;
             list_add(errors, error);
             return type;
@@ -49,8 +49,13 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
          for (int i = 0; i < arg->call.args.size; i++) {
             struct ir_arg* a = (struct ir_arg*) list_get(&arg->call.args, i);
             struct ir_param* p = ((struct map_entry*) list_get(&arg->call.func->params.l, i))->data;
+            struct semantic_type a_type = semantic_arg_check(a, errors);
             
-            semantic_arg_check(a, errors);
+            if (p->type != NULL && p->type != type.type) {
+               if (type.type == NULL && a->arg_type == IR_ARG_PARAM && a->param->type == NULL) {
+                  a->param->type = p->type;
+               }
+            }
          }
          
          struct semantic_type res;
