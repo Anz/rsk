@@ -96,12 +96,13 @@ void* funcs_ow[][2] = {
 
 void x86_call(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
    struct ir_func* func = arg->call.func;
+   struct ir_arg* left_op = list_get(&arg->call.args, 0);
    
    // call function
-   if (strcmp("+", func->name) == 0) func = arg->type.sta->add;
-   if (strcmp("-", func->name) == 0) func = arg->type.sta->sub;
-   if (strcmp("*", func->name) == 0) func = arg->type.sta->mul;
-   if (strcmp("/", func->name) == 0) func = arg->type.sta->div;
+   /*if (strcmp("+", func->name) == 0) func = left_op->type->add;
+   if (strcmp("-", func->name) == 0) func = left_op->type->sub;
+   if (strcmp("*", func->name) == 0) func = left_op->type->mul;
+   if (strcmp("/", func->name) == 0) func = left_op->type->div;*/
 
    // native function overwrite
    for (int i = 0; i < sizeof(funcs_ow) / sizeof(funcs_ow[0]); i++) {
@@ -145,17 +146,17 @@ void x86_func_compile(struct text_ref** refs, struct nr* nr, struct ir_arg* arg,
          break;
       }
       case IR_ARG_PARAM: {
-         x86_loadp(nr, arg_count - arg->param);
-         break;
-      }
-      case IR_ARG_WORD: {
-         x86_loadv(nr, arg->word, false);
+         x86_loadp(nr, arg_count - arg->param->index);
          break;
       }
       case IR_ARG_DATA: {
-         x86_loadv(nr, 0x08048274+nr->data.size, true);
-         buffer_writew(&nr->data, arg->data.size);
-         buffer_write(&nr->data, arg->data.ptr, arg->data.size);
+         if (arg->data.size == 4) {
+            x86_loadv(nr, arg->data.word, false);
+         } else {
+            x86_loadv(nr, 0x08048274+nr->data.size, true);
+            buffer_writew(&nr->data, arg->data.size);
+            buffer_write(&nr->data, arg->data.ptr, arg->data.size);
+         }
          break;
       }
       default:
@@ -183,8 +184,9 @@ struct nr x86_compile(struct map funcs) {
       _print.name = "main";
       
       struct ir_arg _stdin;
-      _stdin.arg_type = IR_ARG_WORD;
-      _stdin.word = 5;
+      _stdin.arg_type = IR_ARG_DATA;
+      _stdin.data.word = 5;
+      _stdin.data.size = 4;
       
       struct ir_arg _call;
       memset(&_call, 0, sizeof(_call));

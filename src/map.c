@@ -44,10 +44,14 @@ void map_set(struct map* m, void* key, size_t key_size, void* data) {
       memset(e, 0, sizeof(*e));
       e->key = key;
       e->key_size = key_size;
-      e->data = data;
+      
+      if (m->l.last != NULL) {
+         ((struct map_entry*) m->l.last->data)->next = e;
+      }
+      list_add(&m->l, e);
    }
    
-   list_add(&m->l, e);
+   e->data = data;
 }
 
 void map_foreach(struct map* m, void (*f)(void* key, size_t key_size, void* data)) {
@@ -55,4 +59,16 @@ void map_foreach(struct map* m, void (*f)(void* key, size_t key_size, void* data
       struct map_entry* entry = (struct map_entry*) item->data;
       f(entry->key, entry->key_size, entry->data);
    }
+}
+
+map_it* map_iterator(struct map* m) {
+   if (m->l.size == 0) {
+      return NULL;
+   }
+   
+   return m->l.first->data;
+}
+
+map_it* map_next(map_it* it) {
+   return it->next;
 }

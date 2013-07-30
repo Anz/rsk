@@ -17,6 +17,22 @@ extern void parse(FILE*, struct map*);
 extern symbol_t* yysymbols();
 extern char* yycode();
 
+static char param_type(int category) {
+   return (char) (65 + category);
+}
+
+static char* arg_type(struct ir_type* type, struct ir_param* param) {
+   if (type != NULL) {
+      return type->name;
+   } else {
+      char* str = malloc(2);
+      memset(str, 0, 2);
+      str[0] = param_type(param->category);
+      return str;
+   }
+   return "";
+}
+
 void print_arg(struct ir_arg* arg) {
    switch (arg->arg_type) {
       case IR_ARG_CALL:
@@ -24,18 +40,22 @@ void print_arg(struct ir_arg* arg) {
             struct ir_arg* a = (struct ir_arg*) list_get(&arg->call.args, i);
             print_arg(a);
          }
-         printf("\tcall %s", arg->call.func->name);
+         
+         struct ir_func* f = arg->call.func;
+         printf("\t(type: %s)\tcall %s\n", arg_type(ir_arg_type(arg), ir_arg_param(arg)), f->name);
+         
          break;
-      case IR_ARG_WORD: printf("\tload #%i", arg->word); break;
-      case IR_ARG_PARAM: printf("\tload %i", arg->param); break;
-      case IR_ARG_DATA: printf("\tload '%s'", (char*)arg->data.ptr); break;
-      default: printf("\tunknown %i", arg->arg_type); break;
-   }
-   
-   switch (arg->type.type) {
-      case IR_RES_STA: printf(" (type: %s)\n", arg->type.sta->add->name); break;
-      case IR_RES_DYN: printf(" (type: param #%i)\n", arg->type.dyn); break;
-      default: printf(" (type: unknown\n");
+      case IR_ARG_PARAM:
+         printf("\t(type: %s)\tload %s\n", arg_type(arg->param->type, arg->param), arg->param->name);
+         break;
+      case IR_ARG_DATA:
+         if (arg->data.size == 4) {
+            printf("\t(type: %s)\tload #%i\n", arg_type(arg->data.type, NULL), arg->data.word); 
+         } else {
+            printf("\t(type: %s)\tload '%s'\n", arg_type(arg->data.type, NULL), (char*)arg->data.ptr);
+         }
+         break;
+      default: printf("\tunknown %i\n", arg->arg_type); break;
    }
 }
 
@@ -43,14 +63,32 @@ void print_func(struct ir_func* f) {
    if (f->value == NULL) {
       return;
    }
-
-   printf("%s:\n", f->name);
+   
+   struct ir_param* param = NULL;
+   if (f->type_param < f->params.l.size) {
+      param = ((struct map_entry*)list_get(&f->params.l, f->type_param))->data;
+   }
+   
+   printf("%s %s", arg_type(f->type, param), f->name);
+   
+   if (f->params.l.size > 0) {
+      map_it* it = map_iterator(&f->params);
+      struct ir_param* param = (struct ir_param*) it->data;
+      
+      printf("(%s %s", arg_type(param->type, param), param->name);
+      
+      it = map_next(it);
+      while (it != NULL) {
+         param = (struct ir_param*) it->data;
+         printf(", %s %s", arg_type(param->type, param), param->name);
+         it = map_next(it);
+      }
+      printf(")");
+   }
+   printf(":\n");
+   
    print_arg(f->value);
    printf("\n");
-}
-
-static void do_semantic_check(void* key, size_t key_size, void* data) {
-   semantic_check((struct ir_func*)data);
 }
 
 void print_usage() {
@@ -97,7 +135,9 @@ int main (int argc, char *argv[]) {
    fclose(in);
    
    // do semantic check
-   map_foreach(&funcs, do_semantic_check);
+   for (map_it* it = map_iterator(&funcs); it != NULL; it = map_next(it)) {
+      semantic_check((struct ir_func*)it->data, &errors);
+   }
    
    // print tree
    if (verbose) {
@@ -108,7 +148,19 @@ int main (int argc, char *argv[]) {
    }
    
    // print error
-   // TODO print errors
+   if (errors.size > 0) {
+      for (list_it* it = list_iterator(&errors); it != NULL; it = list_next(it)) {
+         struct ir_error* error = (struct ir_error*)it->data;
+         printf("error on line %i: %s\n", error->lineno, error->msg);
+         free(error);
+      }
+      
+      // cleanup
+      list_clear(&errors);
+      fclose(out);
+      
+      return 1;
+   }
    list_clear(&errors);
    
    // compile into native code

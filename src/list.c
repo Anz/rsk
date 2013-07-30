@@ -99,3 +99,11 @@ void* list_remove(struct list* l, int index) {
    return data;
 }
 
+list_it* list_iterator(struct list* l) {
+   return l->first;
+}
+
+list_it* list_next(list_it* it) {
+   return it->next;
+}
+

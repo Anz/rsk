@@ -15,10 +15,14 @@ struct list {
    size_t size;
 };
 
+typedef struct list_item list_it;
+
 void list_init(struct list* l);
 void list_clear(struct list* l);
 void* list_get(struct list* l, int index);
 void list_add(struct list* l, void* data);
 void* list_remove(struct list* l, int index);
+list_it* list_iterator(struct list* l);
+list_it* list_next(list_it* it);
 
 #endif
