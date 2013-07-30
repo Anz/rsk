@@ -1,14 +1,15 @@
 #include "semantic.h"
 #include <stdio.h>
 
-static void semantic_binary_operation_check(struct ir_arg* a, struct ir_arg* b, struct list* errors) {
+static void semantic_binary_operation_check(struct ir_arg* call, struct ir_arg* a, struct ir_arg* b, struct list* errors) {
    struct ir_type* type_a = ir_arg_type(a);
    struct ir_type* type_b = ir_arg_type(b);
    
    if (type_a != NULL && type_b != NULL && type_a != type_b) {
       struct ir_error* error = malloc(sizeof(*error));
       memset(error, 0, sizeof(*error));
-      error->msg = "on call of a + b types of a and b must be equals";
+      error->code = IR_ERR_BIN_OP_NE;
+      error->arg = call;
       error->lineno = a->lineno;
       list_add(errors, error);
    } else if (type_a != NULL && type_b == NULL) {
@@ -39,8 +40,10 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
          if (arg->call.args.size != arg->call.func->params.l.size) {
             struct ir_error* error = malloc(sizeof(*error));
             memset(error, 0, sizeof(*error));
-            error->msg = malloc(512);
-            sprintf(error->msg, "calling %s: called with %i args, has %i", arg->call.func->name, arg->call.args.size, arg->call.func->params.l.size);
+            error->code = IR_ERR_NR_ARGS;
+            error->arg = arg;
+            //error->msg = malloc(512);
+            //sprintf(error->msg, "calling %s: called with %i args, has %i", arg->call.func->name, arg->call.args.size, arg->call.func->params.l.size);
             error->lineno = arg->lineno;
             list_add(errors, error);
             return type;
@@ -72,7 +75,7 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
             if (strcmp(binary_operation[i], func->name) == 0) {
                struct ir_arg* a = list_get(&arg->call.args, 0);
                struct ir_arg* b = list_get(&arg->call.args, 1);
-               semantic_binary_operation_check(a, b, errors);
+               semantic_binary_operation_check(arg, a, b, errors);
                
                type.type = ir_arg_type(a);
                type.param = 0;

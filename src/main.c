@@ -151,7 +151,7 @@ int main (int argc, char *argv[]) {
    if (errors.size > 0) {
       for (list_it* it = list_iterator(&errors); it != NULL; it = list_next(it)) {
          struct ir_error* error = (struct ir_error*)it->data;
-         printf("error on line %i: %s\n", error->lineno, error->msg);
+         ir_print_err(*error);
          free(error);
       }
       
