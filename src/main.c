@@ -117,6 +117,8 @@ int main (int argc, char *argv[]) {
               exit(EXIT_FAILURE);
       }
    }
+   
+   // print usage
    if (in == NULL) {
       print_usage();
       return 0;
@@ -162,7 +164,7 @@ int main (int argc, char *argv[]) {
       return 1;
    }
    list_clear(&errors);
-   
+
    // compile into native code
    struct nr nr = x86_compile(funcs);
 

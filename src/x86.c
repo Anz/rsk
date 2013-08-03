@@ -212,7 +212,6 @@ struct nr x86_compile(struct map funcs) {
       if (f->value == NULL) {
          continue;
       }
-   
       symbol_t* sym = malloc(sizeof(symbol_t));
       memset(sym, 0, sizeof(sym));
       sym->name = f->name;
@@ -242,16 +241,16 @@ struct nr x86_compile(struct map funcs) {
       symbol_t* sym = NULL;
       for (symbol_t* s = nr.symbols; s != NULL; s = s->next) {
          if (strcmp(s->name, r->callee) == 0) {
+            printf("sym %s\n", s->name);
             sym = s;
             break;
          }
       }
-      
+         
       if (sym == NULL) {
          printf("x86 error did not found function: %s\n", r->callee);
          exit(1);
       }
-      
       int addr = sym->text - r->caller - 4;
       memcpy((char*)(nr.text.data+r->caller), &addr, sizeof(sym->text));
    };
