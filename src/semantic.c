@@ -14,12 +14,12 @@ static void semantic_binary_operation_check(struct ir_arg* call, struct ir_arg* 
       list_add(errors, error);
    } else if (type_a != NULL && type_b == NULL) {
       switch (b->arg_type) {
-         case IR_ARG_PARAM: b->param->type = type_a; break;
+         case IR_ARG_PARAM: b->call.param->type = type_a; break;
          //case IR_ARG_CALL: b->type = type_a; break;
       }
    } else if (type_a == NULL && type_b != NULL) {
       switch (a->arg_type) {
-         case IR_ARG_PARAM: a->param->type = type_b; break;
+         case IR_ARG_PARAM: a->call.param->type = type_b; break;
          //case IR_ARG_CALL: a->call.type = type_b; break;
       }
    }
@@ -34,7 +34,7 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
          type.type = arg->data.type;
          return type;
       case IR_ARG_PARAM:
-         type.type = arg->param->type;
+         type.type = arg->call.param->type;
          return type;
       case IR_ARG_CALL: {
          if (arg->call.args.size != arg->call.func->params.l.size) {
@@ -55,8 +55,8 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
             struct semantic_type a_type = semantic_arg_check(a, errors);
             
             if (p->type != NULL && p->type != type.type) {
-               if (type.type == NULL && a->arg_type == IR_ARG_PARAM && a->param->type == NULL) {
-                  a->param->type = p->type;
+               if (type.type == NULL && a->arg_type == IR_ARG_PARAM && a->call.param->type == NULL) {
+                  a->call.param->type = p->type;
                }
             }
          }

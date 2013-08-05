@@ -46,7 +46,7 @@ void print_arg(struct ir_arg* arg) {
          
          break;
       case IR_ARG_PARAM:
-         printf("\t(type: %s)\tload %s\n", arg_type(arg->param->type, arg->param), arg->param->name);
+         printf("\t(type: %s)\tload %s\n", arg_type(arg->call.param->type, arg->call.param), arg->call.param->name);
          break;
       case IR_ARG_DATA:
          if (arg->data.size == 4) {
@@ -171,8 +171,16 @@ int main (int argc, char *argv[]) {
    elf_write(out, *nr.symbols, &nr.text, &nr.data);
    fclose(out);
    
-   // TODO: free all func names!
+   // free functions
+   for (map_it* it = map_iterator(&funcs); it != NULL; it = map_next(it)) {
+      struct ir_func* f = it->data;
+      ir_func_clear(f);
+   }
    map_clear(&funcs);
+   
+   // free native representation
+   x86_free(nr);
+   nr.symbols = NULL;
    
    return 0;
 }

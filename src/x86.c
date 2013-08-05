@@ -97,12 +97,6 @@ void* funcs_ow[][2] = {
 void x86_call(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
    struct ir_func* func = arg->call.func;
    struct ir_arg* left_op = list_get(&arg->call.args, 0);
-   
-   // call function
-   /*if (strcmp("+", func->name) == 0) func = left_op->type->add;
-   if (strcmp("-", func->name) == 0) func = left_op->type->sub;
-   if (strcmp("*", func->name) == 0) func = left_op->type->mul;
-   if (strcmp("/", func->name) == 0) func = left_op->type->div;*/
 
    // native function overwrite
    for (int i = 0; i < sizeof(funcs_ow) / sizeof(funcs_ow[0]); i++) {
@@ -146,7 +140,7 @@ void x86_func_compile(struct text_ref** refs, struct nr* nr, struct ir_arg* arg,
          break;
       }
       case IR_ARG_PARAM: {
-         x86_loadp(nr, arg_count - arg->param->index);
+         x86_loadp(nr, arg_count - arg->call.param->index);
          break;
       }
       case IR_ARG_DATA: {
@@ -241,7 +235,6 @@ struct nr x86_compile(struct map funcs) {
       symbol_t* sym = NULL;
       for (symbol_t* s = nr.symbols; s != NULL; s = s->next) {
          if (strcmp(s->name, r->callee) == 0) {
-            printf("sym %s\n", s->name);
             sym = s;
             break;
          }
@@ -256,4 +249,15 @@ struct nr x86_compile(struct map funcs) {
    };
    nr.text.size = 512;
    return nr;
+}
+
+void x86_free(struct nr nr) {
+   buffer_free(&nr.text);
+   buffer_free(&nr.data);
+   
+   for (symbol_t* s = nr.symbols; s != NULL; s = s->next) {
+      symbol_t* next = s->next;
+      free(s);
+      s = next;
+   }
 }

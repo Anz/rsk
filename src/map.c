@@ -25,6 +25,10 @@ void map_clear(struct map* m) {
    list_clear(&m->l);
 }
 
+int map_size(struct map* m) {
+   return m->l.size;
+}
+
 void* map_get(struct map* m, void* key, size_t key_size) {
    struct map_entry* e = map_get_entry(m, key, key_size);
    void* data = NULL;

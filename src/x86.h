@@ -14,6 +14,7 @@ struct nr {
 };
 
 struct nr x86_compile(struct map funcs);
+void x86_free(struct nr);
 
 #endif
 

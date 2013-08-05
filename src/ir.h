@@ -34,11 +34,12 @@ struct ir_param {
 struct ir_arg {
    int arg_type;
    union {
-      struct ir_param* param;
       struct {
-         struct ir_func* func;
+         union {
+            struct ir_param* param;
+            struct ir_func* func;
+         };
          struct list args;
-         int param_type;
       } call;
       struct {
          union {
@@ -69,8 +70,19 @@ struct ir_error {
    int lineno;
 };
 
+// construction
+struct ir_func* ir_func_init(char* name, int lineno);
+void ir_func_clear(struct ir_func* f);
+struct ir_param* ir_func_param(struct ir_func* func, char* name, int lineno);
+struct ir_arg* ir_arg_word(int word, struct ir_type* type, int lineno);
+struct ir_arg* ir_arg_data(char* ptr, size_t size, struct ir_type* type, int lineno);
+struct ir_arg* ir_arg_call(struct map* funcs, struct ir_func* func, char* name, struct list* args, int lineno);
+
+// resolving
 struct ir_type* ir_arg_type(struct ir_arg* arg);
 struct ir_param* ir_arg_param(struct ir_arg* arg);
+
+// error function
 void ir_print_err(struct ir_error err);
 
 #endif
