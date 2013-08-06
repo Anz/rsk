@@ -1,6 +1,8 @@
 #include "asm.h"
 #include "map.h"
 #include <regex.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #define ASM_OP_REG_REG  0x1
 #define ASM_OP_REG_MEM  0x2
