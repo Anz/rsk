@@ -1,4 +1,5 @@
 #include "x86.h"
+#include "asm.h"
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -170,6 +171,17 @@ void x86_func_compile(struct text_ref** refs, struct nr* nr, struct ir_arg* arg,
 
 
 struct nr x86_compile(struct map funcs) {
+   asm_init();
+   struct buffer buf;
+   buffer_init(&buf, 512);   
+   asm_x86(&buf, "add %eax, %ecx;");
+   
+   printf("buf: ");
+   for (int i = 0; i < buf.size; i++) {
+      printf("%02x ", buf.data[i] & 0xFF);
+   }
+   putchar('\n');
+
    struct nr nr;
    memset(&nr, 0, sizeof(nr));
    symbol_t* last = NULL;
@@ -258,6 +270,9 @@ struct nr x86_compile(struct map funcs) {
       memcpy((char*)(nr.text.data+r->caller), &addr, sizeof(sym->text));
    };
    nr.text.size = 512;
+   
+   asm_free();
+   
    return nr;
 }
 
