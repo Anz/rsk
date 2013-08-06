@@ -17,10 +17,7 @@ struct ir_param;
 
 struct ir_type {
    char* name;
-   struct ir_func* add;
-   struct ir_func* sub;
-   struct ir_func* mul;
-   struct ir_func* div;
+   struct map ops;
 };
 
 struct ir_param {
@@ -74,6 +71,7 @@ struct ir_error {
 struct ir_func* ir_func_init(char* name, int lineno);
 void ir_func_clear(struct ir_func* f);
 struct ir_param* ir_func_param(struct ir_func* func, char* name, int lineno);
+struct ir_arg* ir_arg_op(struct ir_func* func, struct ir_arg* a, struct ir_arg* b, int lineno);
 struct ir_arg* ir_arg_word(int word, struct ir_type* type, int lineno);
 struct ir_arg* ir_arg_data(char* ptr, size_t size, struct ir_type* type, int lineno);
 struct ir_arg* ir_arg_call(struct map* funcs, struct ir_func* func, char* name, struct list* args, int lineno);

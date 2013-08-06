@@ -42,8 +42,6 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
             memset(error, 0, sizeof(*error));
             error->code = IR_ERR_NR_ARGS;
             error->arg = arg;
-            //error->msg = malloc(512);
-            //sprintf(error->msg, "calling %s: called with %i args, has %i", arg->call.func->name, arg->call.args.size, arg->call.func->params.l.size);
             error->lineno = arg->lineno;
             list_add(errors, error);
             return type;
@@ -66,7 +64,7 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
          struct ir_func* func = arg->call.func;
          
          char* binary_operation[] = {
-            "+", "-", "*", "/"
+            "+", "-", "*", "/", "=", "<", ">"
          };
          
          
@@ -81,11 +79,11 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
                type.param = 0;
                
                if (type.type != NULL) {
-                  switch (i) {
-                     case 0: arg->call.func = type.type->add; break;
-                     case 1: arg->call.func = type.type->sub; break;
-                     case 2: arg->call.func = type.type->mul; break;
-                     case 3: arg->call.func = type.type->div; break;
+                  struct ir_func* op = map_get(&type.type->ops, func->name, strlen(func->name) + 1);
+                  if (op != NULL) {
+                     arg->call.func = op;
+                  } else {
+                     printf("not found %s on %s (size: %i)\n", func->name, type.type->name, map_size(&type.type->ops));
                   }
                }
                

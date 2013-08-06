@@ -18,6 +18,7 @@ struct map* funcs = NULL;
 
 struct ir_func* func_cur = NULL;
 
+struct ir_type* type_bool = NULL;
 struct ir_type* type_int = NULL;
 struct ir_type* type_float = NULL;
 struct ir_type* type_array = NULL;
@@ -40,21 +41,21 @@ struct ir_func* func_new(char* name) {
 
 int yyparse ();
 
-static struct ir_func* binary_op(char* name, struct ir_type* type) {
+static struct ir_func* binary_op(char* name, struct ir_type* arg, struct ir_type* res) {
    struct ir_param* a = malloc(sizeof(*a));
    memset(a, 0, sizeof(*a));
    a->name = strdup("a");
-   a->type = type;
+   a->type = arg;
    
    struct ir_param* b = malloc(sizeof(*b));
    memset(b, 0, sizeof(*b));
    b->name = strdup("b");
-   b->type = type;
+   b->type = arg;
    
    
    // setup functions
    struct ir_func* f = func_new(name);
-   f->type = type;
+   f->type = res;
    map_set(&f->params, a->name, strlen(a->name)+1, a);
    map_set(&f->params, b->name, strlen(b->name)+1, b);
    
@@ -66,24 +67,39 @@ void parse(FILE* in, struct map* f) {
    funcs = f;
    
    // setup functions
-   binary_op("+", NULL);
+   binary_op("+", NULL, NULL);
+   binary_op("=", NULL, NULL);
    
 
    // setup types
+   type_bool = malloc(sizeof(*type_bool));
+   type_bool->name = "bool";
+   map_init(&type_bool->ops);
+   map_set(&type_bool->ops, "=", 2, binary_op("int=", type_bool, type_bool));
+   map_set(&type_bool->ops, "<", 2, binary_op("int<", type_bool, type_bool));
+   map_set(&type_bool->ops, ">", 2, binary_op("int>", type_bool, type_bool));
+   
+   
    type_int = malloc(sizeof(*type_int));
    type_int->name = "int";
-   type_int->add = binary_op("int+", type_int);   
-   type_int->sub = binary_op("int-", type_int);
-   type_int->mul = binary_op("int*", type_int);
-   type_int->div = binary_op("int/", type_int);
+   map_init(&type_int->ops);
+   map_set(&type_int->ops, "+", 2, binary_op("int+", type_int, type_int));
+   map_set(&type_int->ops, "-", 2, binary_op("int-", type_int, type_int));
+   map_set(&type_int->ops, "*", 2, binary_op("int*", type_int, type_int));
+   map_set(&type_int->ops, "/", 2, binary_op("int/", type_int, type_int));
+   map_set(&type_int->ops, "=", 2, binary_op("int=", type_int, type_bool));
+   map_set(&type_int->ops, "<", 2, binary_op("int<", type_int, type_bool));
+   map_set(&type_int->ops, ">", 2, binary_op("int>", type_int, type_bool));
    
    type_float = malloc(sizeof(*type_float));
    type_float->name = "float";
-   type_float->add = binary_op("float+", type_float);
+   map_init(&type_float->ops);
+   map_set(&type_float->ops, "+", 2, binary_op("float+", type_float, type_float));
    
    type_array = malloc(sizeof(*type_array));
    type_array->name = "array";
-   type_array->add = binary_op("array+", type_array);
+   map_init(&type_array->ops);
+   map_set(&type_array->ops, "+", 2, binary_op("array+", type_array, type_array));
 
    // parsing
    yyin = in;
@@ -111,9 +127,9 @@ void parse(FILE* in, struct map* f) {
 %token ID INT FLOAT ARRAY
 
 %type <func> var
-%type <arg> expr term factor
+%type <arg> cmp expr term factor
 %type <list> args
-%type <str> ID '+' '-' '*' '/'
+%type <str> ID '=' '<' '>' '+' '-' '*' '/'
 %type <word> INT FLOAT
 %type <data> ARRAY
 
@@ -123,8 +139,8 @@ line     : line def
          | def
          ;
 
-def      : var '(' param ')' '=' expr     { $1->value = $6; }
-         | var '=' expr                   { $1->value = $3; }
+def      : var '(' param ')' '=' cmp     { $1->value = $6; }
+         | var '=' cmp                   { $1->value = $3; }
          ;
             
 var      : ID                             { $$ = func_cur = func_new($1); $$->lineno = yylineno; map_set(funcs, $$->name, strlen($$->name) + 1, $$); }
@@ -133,14 +149,21 @@ var      : ID                             { $$ = func_cur = func_new($1); $$->li
 param    : param ',' ID                   { ir_func_param(func_cur, $3, yylineno); }
          | ID                             { ir_func_param(func_cur, $1, yylineno); }
          ;
+         
+cmp      : cmp '=' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
+         | cmp '<' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
+         | cmp '>' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
+         | expr
+         ;
+         
 
-expr     : expr '+' term                  { PARSER_INIT($$); $$->lineno = yylineno; $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
-         | expr '-' term                  { PARSER_INIT($$); $$->lineno = yylineno; $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
+expr     : expr '+' term                  { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
+         | expr '-' term                  { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
          | term
          ;
 
-term     : term '*' factor                { PARSER_INIT($$);$$->lineno = yylineno;  $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3); }
-         | term '/' factor                { PARSER_INIT($$);$$->lineno = yylineno;  $$->arg_type = IR_ARG_CALL; $$->call.func = func_new($2); list_add(&$$->call.args, $1); list_add(&$$->call.args, $3);   }
+term     : term '*' factor                { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
+         | term '/' factor                { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
          | factor
          ;
 
@@ -151,7 +174,7 @@ factor   : INT                            { $$ = ir_arg_word($1, type_int, yylin
          | ID                             { $$ = ir_arg_call(funcs, func_cur, $1, NULL, yylineno); }
          ;
 
-args     : args ',' expr                  { $$ = $1; list_add($$, $3); }
-         | expr                           { PARSER_INIT($$); list_add($$, $1); }
+args     : args ',' cmp                   { $$ = $1; list_add($$, $3); }
+         | cmp                            { PARSER_INIT($$); list_add($$, $1); }
          ;
 %%

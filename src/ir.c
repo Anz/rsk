@@ -60,6 +60,19 @@ struct ir_param* ir_func_param(struct ir_func* func, char* name, int lineno) {
    return p;
 }
 
+struct ir_arg* ir_arg_op(struct ir_func* func, struct ir_arg* a, struct ir_arg* b, int lineno) {
+   struct ir_arg* arg = malloc(sizeof(*arg));
+   memset(arg, 0, sizeof(*arg));
+   arg->arg_type = IR_ARG_CALL;
+   arg->call.func = func;
+   list_init(&arg->call.args);
+   list_add(&arg->call.args, a);
+   list_add(&arg->call.args, b);
+   arg->lineno = lineno;
+   
+   return arg;
+}
+
 struct ir_arg* ir_arg_word(int word, struct ir_type* type, int lineno) {
    struct ir_arg* arg = malloc(sizeof(*arg));
    memset(arg, 0, sizeof(*arg));

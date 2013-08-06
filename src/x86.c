@@ -76,6 +76,13 @@ void x86_int_div(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int 
    buffer_write(&nr->text, code, sizeof(code));
 }
 
+void x86_int_cmp(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
+   x86_load_param(refs, nr, arg->call.args, arg_count);
+   
+   char code[] = { 0x5A, 0x5B, 0x39, 0xC3, 0x50 };
+   buffer_write(&nr->text, code, sizeof(code));
+}
+
 void x86_array_add(struct text_ref** refs, struct nr* nr, struct ir_arg* arg, int arg_count) {
    struct list args = arg->call.args;
    
@@ -90,6 +97,9 @@ void* funcs_ow[][2] = {
    { "int-", &x86_int_sub },
    { "int*", &x86_int_mul },
    { "int/", &x86_int_div },
+   { "int=", &x86_int_cmp },
+   { "int<", &x86_int_cmp },
+   { "int>", &x86_int_cmp },
    { "float+", &x86_int_add },
    { "array+", &x86_array_add },
 };
