@@ -30,6 +30,10 @@ void list_clear(struct list* l) {
    memset(l, 0, sizeof(*l));
 }
 
+int list_size(struct list* l) {
+   return l->size;
+}
+
 void* list_get(struct list* l, int index) {
    struct list_item* item = list_get_element(l, index);
    

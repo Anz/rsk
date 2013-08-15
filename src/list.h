@@ -19,6 +19,7 @@ typedef struct list_item list_it;
 
 void list_init(struct list* l);
 void list_clear(struct list* l);
+int list_size(struct list* l);
 void* list_get(struct list* l, int index);
 void list_add(struct list* l, void* data);
 void* list_remove(struct list* l, int index);

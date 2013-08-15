@@ -1,10 +1,12 @@
 
-all: bin src/scanner.c src/parser.c
-	@gcc -std=gnu99 src/list.c src/map.c src/buffer.c src/ir.c src/scanner.c src/parser.c src/semantic.c src/asm.c src/elf.c src/x86.c src/main.c -g -o bin/rev
-	@bin/rev -o test/prog -i test/test.rev
+all: bin src/scanner.c src/parser.c src/x86_fun.c
+	@gcc -std=gnu99 src/list.c src/map.c src/buffer.c src/ir.c src/scanner.c src/parser.c src/semantic.c src/i32.c src/main.c -g -o bin/rev
 
 bin:
 	@mkdir bin
+	
+src/x86_fun.c: src/x86_fun.s
+	@cd src; xxd -i x86_fun.s x86_fun.c
 
 src/yyscanner.c: src/scanner.l
 	@flex -o src/yyscanner.c src/scanner.l

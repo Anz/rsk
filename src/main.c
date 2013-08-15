@@ -1,7 +1,8 @@
 #include "map.h"
-#include "elf.h"
+//#include "elf.h"
 #include "ir.h"
-#include "x86.h"
+//#include "x86.h"
+#include "i32.h"
 #include "parser.h"
 #include "semantic.h"
 
@@ -14,7 +15,6 @@
 #include <stdbool.h>
 
 extern void parse(FILE*, struct map*);
-extern symbol_t* yysymbols();
 extern char* yycode();
 
 static char param_type(int category) {
@@ -166,10 +166,13 @@ int main (int argc, char *argv[]) {
    list_clear(&errors);
 
    // compile into native code
-   struct nr nr = x86_compile(funcs);
+   struct buffer buf = i32_compile(funcs);
+   fwrite(buf.data, buf.size, 1, out);
+   buffer_free(&buf);
+   /*struct nr nr = x86_compile(funcs);
 
    elf_write(out, *nr.symbols, &nr.text, &nr.data);
-   fclose(out);
+   fclose(out);*/
    
    // free functions
    for (map_it* it = map_iterator(&funcs); it != NULL; it = map_next(it)) {
@@ -179,8 +182,8 @@ int main (int argc, char *argv[]) {
    map_clear(&funcs);
    
    // free native representation
-   x86_free(nr);
-   nr.symbols = NULL;
+   //x86_free(nr);
+   //nr.symbols = NULL;
    
    return 0;
 }

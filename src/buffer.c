@@ -1,5 +1,7 @@
 #include "buffer.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 static void inc(struct buffer* buf) {
    buf->capacity *= 2;
@@ -23,10 +25,23 @@ void buffer_free(struct buffer* buf) {
    memset(buf, 0, sizeof(buf));
 }
 
+void buffer_copy(struct buffer* src, struct buffer* dest) {
+   buffer_write(dest, src->data, src->size);
+}
+
 void buffer_write(struct buffer* buf, void* data, size_t size) {
    check_bounds(buf, size);
    memcpy(buf->data + buf->size, data, size);
    buf->size += size;
+}
+
+void buffer_writes(struct buffer* buf, char* str, ...) {
+   check_bounds(buf, strlen(str)+512); // for arguments
+   
+   va_list args;
+   va_start(args, str);
+   buf->size += vsprintf(buf->data + buf->size, str, args);
+   va_end(args);
 }
 
 void buffer_writew(struct buffer* buf, int word) {
