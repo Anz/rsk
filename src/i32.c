@@ -61,14 +61,14 @@ void x86_loadd(buffer_t* text, char* label) {
 }
 
 void* funcs_ow[][2] = {
-   { "int+", "\tadd %%edx, %%eax\n" },
-   { "int-", "\tsub %%edx, %%eax\n" },
-   { "int*", "\tmul %%edx, %%eax\n" },
-   { "int/", "\tdiv %%edx, %%eax\n" },
-   { "int=", "\tadd %%edx, %%eax\n" },
-   { "int<", "\tadd %%edx, %%eax\n" },
-   { "int>", "\tadd %%edx, %%eax\n" },
-   { "float+", "\tadd %%edx, %%eax\n" },
+   { "int+", "\tadd %%ebx, %%eax\n" },
+   { "int-", "\tsub %%ebx, %%eax\n" },
+   { "int*", "\tmul %%ebx, %%eax\n" },
+   { "int/", "\tdiv %%ebx, %%eax\n" },
+   { "int=", "\tsub %%ebx, %%eax\n" },
+   { "int<", "\tcall _lt\n" },
+   { "int>", "\tcall _gt\n" },
+   { "float+", "\tadd %%ebx, %%eax\n" },
    { "array+", "\tcall _concat\n" },
 };
 
@@ -112,7 +112,6 @@ void x86_call(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count)
       char* value = (char*)funcs_ow[i][1];
       if (strcmp(name, func->name) == 0) {
          buffer_writes(text, value);
-         
          x86_restore_reg(text, tmpargidx);
          argidx = tmpargidx + 1;
          return;
@@ -209,8 +208,6 @@ struct buffer i32_compile(struct map funcs) {
       if (list_size(&f->cases) == 0) {
          continue;
       }
-      
-      argidx = 0;
    
       buffer_writes(&text,
          "\n%s:\n"
@@ -222,12 +219,34 @@ struct buffer i32_compile(struct map funcs) {
          "\tpush %%edx\n",
          f->name);
       
-      x86_func_compile(&text, &data, ((struct ir_case*)list_get(&f->cases, 0))->func, map_size(&f->params));
+      for (int i = 0; i < list_size(&f->cases); i++) {
+      
+         struct ir_case* c = list_get(&f->cases, i);
+         if (c->cond != NULL && i < list_size(&f->cases) - 1) {
+            argidx = 0;
+            x86_func_compile(&text, &data, c->cond, map_size(&f->params));
+            buffer_writes(&text, 
+               "\tcmp $0, %%eax\n"
+               "\tjne %s%04i\n", f->name, i);
+         }
+         argidx = 0;
+         x86_func_compile(&text, &data, c->func, map_size(&f->params));
+         if (c->cond != NULL && i < list_size(&f->cases) - 1) {
+            buffer_writes(&text, 
+               "\tjmp %s_end\n"
+               "%s%04i:", 
+               f->name, f->name, i);
+         }
+      }
+      
+      if (list_size(&f->cases) > 1) {
+         buffer_writes(&text, "%s_end:", f->name);
+      }
       
       buffer_writes(&text,
          "\tmov %%ebp, %%esp\n"
          "\tpop %%ebp\n"
-         "\tret\n");
+         "\tret\n", f->name);
    }
    
    buffer_copy(&data, &text);

@@ -28,6 +28,10 @@ static void semantic_binary_operation_check(struct ir_arg* call, struct ir_arg* 
 static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* errors) {
    struct semantic_type type;
    memset(&type, 0, sizeof(type));
+   
+   if (arg == NULL) {
+      return type;
+   }
 
    switch (arg->arg_type) {
       case IR_ARG_DATA:
@@ -46,7 +50,11 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
             list_add(errors, error);
             return type;
          }
-      
+         
+         if (strcmp(arg->call.func->name, "strcat") == 0) {
+            return type;
+         }
+         
          for (int i = 0; i < arg->call.args.size; i++) {
             struct ir_arg* a = (struct ir_arg*) list_get(&arg->call.args, i);
             struct ir_param* p = ((struct map_entry*) list_get(&arg->call.func->params.l, i))->data;
@@ -66,7 +74,6 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
          char* binary_operation[] = {
             "+", "-", "*", "/", "=", "<", ">"
          };
-         
          
          // check if call is on binary function
          for (int i = 0; i < sizeof(binary_operation) / sizeof(char*); i++) {
@@ -117,6 +124,7 @@ struct semantic_type semantic_check(struct ir_func* f, struct list* errors) {
    for (int i = 0; i < list_size(&f->cases); i++) {
       struct ir_case* c = list_get(&f->cases, i);
       
+      semantic_arg_check(c->cond, errors);
       struct semantic_type type = semantic_arg_check(c->func, errors);
       
       if (i == 0) {
@@ -124,7 +132,9 @@ struct semantic_type semantic_check(struct ir_func* f, struct list* errors) {
          f->type = type.type;
          f->type_param = type.param;
       } else {
-         printf("error cases have not the same type\n");
+         if (first.type != type.type || first.param != type.param) {
+            printf("error cases have not the same type\n");
+         }
       }
    }
    return first;  

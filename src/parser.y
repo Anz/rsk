@@ -68,7 +68,10 @@ void parse(FILE* in, struct map* f) {
    
    // setup functions
    binary_op("+", NULL, NULL);
+   binary_op("-", NULL, NULL);
    binary_op("=", NULL, NULL);
+   binary_op("<", NULL, NULL);
+   binary_op(">", NULL, NULL);
    
 
    // setup types
@@ -100,6 +103,7 @@ void parse(FILE* in, struct map* f) {
    type_array->name = "array";
    map_init(&type_array->ops);
    map_set(&type_array->ops, "+", 2, binary_op("array+", type_array, type_array));
+   map_set(&type_array->ops, "=", 2, binary_op("array=", type_array, type_bool));
 
    // parsing
    yyin = in;
@@ -127,7 +131,7 @@ void parse(FILE* in, struct map* f) {
 %token ID INT FLOAT ARRAY
 
 %type <func> var
-%type <arg> case cmp expr term factor
+%type <arg> cmp expr term factor
 %type <list> args
 %type <str> ID '=' '<' '>' '+' '-' '*' '/'
 %type <word> INT FLOAT
@@ -141,7 +145,7 @@ line     : line def
          | '\n'
          ;
 
-def      : var '(' param ')' '=' case     { list_add(&$1->cases, ir_func_case(NULL, $6, yylineno)); }
+def      : var '(' param ')' '=' case
          | var '(' param ')' '=' cmp '\n' { list_add(&$1->cases, ir_func_case(NULL, $6, yylineno)); }
          | var '=' cmp '\n'               { list_add(&$1->cases, ir_func_case(NULL, $3, yylineno)); }
          ;
@@ -153,8 +157,8 @@ param    : param ',' ID                   { ir_func_param(func_cur, $3, yylineno
          | ID                             { ir_func_param(func_cur, $1, yylineno); }
          ;
       
-case     : case '{' cmp ',' cmp '\n'      { $$ = $3; }
-         | '{' cmp ',' cmp '\n'           { $$ = $2; }
+case     : case '{' cmp ',' cmp '\n'      { list_add(&func_cur->cases, ir_func_case($5, $3, yylineno)); }
+         | '{' cmp ',' cmp '\n'           { list_add(&func_cur->cases, ir_func_case($4, $2, yylineno)); }
          ;
          
 cmp      : cmp '=' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }

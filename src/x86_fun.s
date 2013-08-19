@@ -52,28 +52,19 @@ _malloc:
 _memcpy:
          push  %ebp
          mov   %esp, %ebp
-         
-         #mov   0x8(%ebp), %esi
-         #mov   0xc(%ebp), %edi
-         #mov   0xf(%ebp), %eax
-         
          mov   %eax, %esi
          mov   %ebx, %edi
          mov   %ecx, %eax
-         
 _memcpy_1:
          movsb
          dec   %eax
          cmp   $0, %eax
          jg    _memcpy_1
-         
-         #mov   0xc(%ebp), %eax
          mov   %ebx, %eax
-         
          mov   %ebp, %esp
          pop   %ebp
-         ret  
-
+         ret
+         
 _concat:
          push  %ebp
          mov   %esp, %ebp
@@ -122,3 +113,20 @@ _concat:
          mov %ebp, %esp
          pop %ebp
          ret
+
+_gt:
+         cmp   %eax, %ebx
+         mov   $1, %eax
+         jg    _gt_end
+         mov   $0, %eax
+_gt_end: ret
+
+
+_lt:
+         cmp   %eax, %ebx
+         mov   $1, %eax
+         jl    _lt_end
+         mov   $0, %eax
+_lt_end: ret
+
+         
