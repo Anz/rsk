@@ -17,8 +17,14 @@ int max(int a, int b) {
 void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count);
 
 void x86_loadp(struct buffer* text, int param) {
-   int index = (1+param)*4;
-      
+   int index = param*4;
+   
+   if (param <= 4) {
+      index = -index;
+   } else {
+      index += 4;
+   }
+   
    switch (argidx) {
       case 0: buffer_writes(text, "\tmovl %i(%%ebp), %%eax\n", index); break;
       case 1: buffer_writes(text, "\tmovl %i(%%ebp), %%ebx\n", index); break;
@@ -209,7 +215,11 @@ struct buffer i32_compile(struct map funcs) {
       buffer_writes(&text,
          "\n%s:\n"
          "\tpush %%ebp\n"
-         "\tmov %%esp, %%ebp\n",
+         "\tmov %%esp, %%ebp\n"
+         "\tpush %%eax\n"
+         "\tpush %%ebx\n"
+         "\tpush %%ecx\n"
+         "\tpush %%edx\n",
          f->name);
       
       x86_func_compile(&text, &data, f->value, map_size(&f->params));
