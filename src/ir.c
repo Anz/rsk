@@ -7,11 +7,16 @@ struct ir_func* ir_func_init(char* name, int lineno) {
    memset(f, 0, sizeof(*f));
    f->name = strdup(name);
    map_init(&f->params);
+   list_init(&f->cases);
    f->lineno;
    return f;
 }
 
 static void ir_arg_clear(struct ir_arg* arg) {
+   if (arg == NULL) {
+      return;
+   }
+
    switch (arg->arg_type) {
       case IR_ARG_DATA: 
          if (arg->data.size > 4) {
@@ -42,9 +47,19 @@ void ir_func_clear(struct ir_func* f) {
    map_clear(&f->params);
    
    // free value
-   if (f->value != NULL) {
-      ir_arg_clear(f->value);
+   for (int i = 0; i < list_size(&f->cases); i++) {
+      struct ir_case* c = list_get(&f->cases, i);
+      ir_arg_clear(c->cond);
+      ir_arg_clear(c->func);
    }
+}
+
+struct ir_case* ir_func_case(struct ir_arg* cond, struct ir_arg* func, int lineno) {
+   struct ir_case* c = malloc(sizeof(*c));
+   memset(c, 0, sizeof(*c));
+   c->cond = cond;
+   c->func = func;
+   c->lineno = lineno;
 }
 
 struct ir_param* ir_func_param(struct ir_func* func, char* name, int lineno) {

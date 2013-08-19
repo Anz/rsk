@@ -206,7 +206,7 @@ struct buffer i32_compile(struct map funcs) {
       struct map_entry* entry = (struct map_entry*) item->data;
       struct ir_func* f = entry->data;
    
-      if (f->value == NULL) {
+      if (list_size(&f->cases) == 0) {
          continue;
       }
       
@@ -222,7 +222,7 @@ struct buffer i32_compile(struct map funcs) {
          "\tpush %%edx\n",
          f->name);
       
-      x86_func_compile(&text, &data, f->value, map_size(&f->params));
+      x86_func_compile(&text, &data, ((struct ir_case*)list_get(&f->cases, 0))->func, map_size(&f->params));
       
       buffer_writes(&text,
          "\tmov %%ebp, %%esp\n"

@@ -134,14 +134,16 @@ void parse(FILE* in, struct map* f) {
 %type <data> ARRAY
 
 %%
-
+         
 line     : line def
+         | line '\n'
          | def
+         | '\n'
          ;
 
-def      : var '(' param ')' '=' case    { $1->value = $6; }
-         | var '(' param ')' '=' cmp     { $1->value = $6; }
-         | var '=' cmp                   { $1->value = $3; }
+def      : var '(' param ')' '=' case     { list_add(&$1->cases, ir_func_case(NULL, $6, yylineno)); }
+         | var '(' param ')' '=' cmp '\n' { list_add(&$1->cases, ir_func_case(NULL, $6, yylineno)); }
+         | var '=' cmp '\n'               { list_add(&$1->cases, ir_func_case(NULL, $3, yylineno)); }
          ;
             
 var      : ID                             { $$ = func_cur = func_new($1); $$->lineno = yylineno; map_set(funcs, $$->name, strlen($$->name) + 1, $$); }
@@ -151,8 +153,8 @@ param    : param ',' ID                   { ir_func_param(func_cur, $3, yylineno
          | ID                             { ir_func_param(func_cur, $1, yylineno); }
          ;
       
-case     : case '{' cmp                   { $$ = $3 }
-         | '{' cmp                        { $$ = $2 }
+case     : case '{' cmp ',' cmp '\n'      { $$ = $3; }
+         | '{' cmp ',' cmp '\n'           { $$ = $2; }
          ;
          
 cmp      : cmp '=' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }

@@ -51,10 +51,16 @@ struct ir_arg {
    int lineno;
 };
 
+struct ir_case {
+   struct ir_arg* cond;
+   struct ir_arg* func;
+   int lineno;
+};
+
 struct ir_func {
    char* name;
    struct map params;
-   struct ir_arg* value;
+   struct list cases;
    struct ir_type* type;
    int type_param;
    int lineno;
@@ -70,6 +76,7 @@ struct ir_error {
 // construction
 struct ir_func* ir_func_init(char* name, int lineno);
 void ir_func_clear(struct ir_func* f);
+struct ir_case* ir_func_case(struct ir_arg* cond, struct ir_arg* func, int lineno);
 struct ir_param* ir_func_param(struct ir_func* func, char* name, int lineno);
 struct ir_arg* ir_arg_op(struct ir_func* func, struct ir_arg* a, struct ir_arg* b, int lineno);
 struct ir_arg* ir_arg_word(int word, struct ir_type* type, int lineno);

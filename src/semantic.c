@@ -107,14 +107,25 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, struct list* 
 }
 
 struct semantic_type semantic_check(struct ir_func* f, struct list* errors) {
-   if (f->value == NULL) {
+   if (list_size(&f->cases) == 0) {
       struct semantic_type type;
       memset(&type, 0, sizeof(type));
       return type;
    }
    
-   struct semantic_type type = semantic_arg_check(f->value, errors);
-   f->type = type.type;
-   f->type_param = type.param;
-   return type;  
+   struct semantic_type first;
+   for (int i = 0; i < list_size(&f->cases); i++) {
+      struct ir_case* c = list_get(&f->cases, i);
+      
+      struct semantic_type type = semantic_arg_check(c->func, errors);
+      
+      if (i == 0) {
+         first = type;
+         f->type = type.type;
+         f->type_param = type.param;
+      } else {
+         printf("error cases have not the same type\n");
+      }
+   }
+   return first;  
 }

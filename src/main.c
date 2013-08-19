@@ -60,7 +60,7 @@ void print_arg(struct ir_arg* arg) {
 }
 
 void print_func(struct ir_func* f) {
-   if (f->value == NULL) {
+   if (list_size(&f->cases) == 0) {
       return;
    }
    
@@ -87,7 +87,7 @@ void print_func(struct ir_func* f) {
    }
    printf(":\n");
    
-   print_arg(f->value);
+   print_arg(((struct ir_case*)list_get(&f->cases, 0))->func);
    printf("\n");
 }
 

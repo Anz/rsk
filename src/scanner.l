@@ -57,7 +57,7 @@ str         '[^']*'
 %%
 
 [ \t]       ;
-[\n]        { yylineno++; }
+[\n]        { yylineno++; return yytext[0]; }
 {float}     { float val = (float)atof(yytext); memcpy(&yylval.word, &val, 4); return FLOAT; }
 {int}       { yylval.word = atoi(yytext); return INT; }
 {id}        { yylval.str = strdup(yytext); return ID; }
