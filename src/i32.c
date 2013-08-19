@@ -10,13 +10,13 @@
 int data_id = 0;
 int argidx = 0;
 
+int max(int a, int b) {
+   return b < a ? a : b;
+}
+
 void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count);
 
 void x86_loadp(struct buffer* text, int param) {
-   /*buffer_writes(buf, 
-      "\tpush %i(%%ebp)\n",
-      (1+param)*4);*/
-      
    int index = (1+param)*4;
       
    switch (argidx) {
@@ -31,8 +31,6 @@ void x86_loadp(struct buffer* text, int param) {
 }
 
 void x86_loadv(buffer_t* text, int arg) {
-   //buffer_writes(text, "\tpush $%i\n", arg);
-   
    switch (argidx) {
       case 0: buffer_writes(text, "\tmovl $%i, %%eax\n", arg); break;
       case 1: buffer_writes(text, "\tmovl $%i, %%ebx\n", arg); break;
@@ -45,14 +43,6 @@ void x86_loadv(buffer_t* text, int arg) {
 }
 
 void x86_loadd(buffer_t* text, char* label) {
-   /*buffer_writes(text, 
-      "\tpush $%s\n",
-      label);*/
-         
-  /*buffer_writes(text,
-         "\tcall _print\n"
-         "\tadd $4, %%esp\n");*/
-         
   switch (argidx) {
       case 0: buffer_writes(text, "\tmovl $%s, %%eax\n", label); break;
       case 1: buffer_writes(text, "\tmovl $%s, %%ebx\n", label); break;
@@ -64,87 +54,16 @@ void x86_loadd(buffer_t* text, char* label) {
    argidx++;
 }
 
-void x86_int_add(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
-   x86_func_compile(text, data, a, arg_count);
-   x86_func_compile(text, data, b, arg_count);
-   
-   buffer_writes(text, 
-      /*"\tpop %%eax\n"
-      "\tpop %%edx\n"*/
-      "\tadd %%edx, %%eax\n"
-      /*"\tpush %%eax\n"*/);
-}
-
-void x86_int_sub(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
-   x86_func_compile(text, data, a, arg_count);
-   x86_func_compile(text, data, b, arg_count);
-   
-   buffer_writes(text, 
-      /*"\tpop %%eax\n"
-      "\tpop %%edx\n"*/
-      "\tsub %%edx, %%eax\n"
-      /*"\tpush %%eax\n"*/);
-}
-
-void x86_int_mul(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
-   x86_func_compile(text, data, a, arg_count);
-   x86_func_compile(text, data, b, arg_count);
-   
-   buffer_writes(text, 
-      /*"\tpop %%eax\n"
-      "\tpop %%edx\n"*/
-      "\tmul %%edx, %%eax\n"
-      /*"\tpush %%eax\n"*/);
-}
-
-void x86_int_div(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
-   x86_func_compile(text, data, a, arg_count);
-   x86_func_compile(text, data, b, arg_count);
-   
-   buffer_writes(text, 
-      /*"\tpop %%eax\n"
-      "\tpop %%edx\n"*/
-      "\tdiv %%edx, %%eax\n"
-      /*"\tpush %%eax\n"*/);
-}
-
-void x86_int_cmp(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
-   x86_func_compile(text, data, a, arg_count);
-   x86_func_compile(text, data, b, arg_count);
-   
-   buffer_writes(text, 
-      /*"\tpop %%eax\n"
-      "\tpop %%edx\n"*/
-      "\tadd %%edx, %%eax\n"
-      /*"\tpush %%eax\n"*/);
-}
-
-void x86_array_add(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
-   x86_func_compile(text, data, a, arg_count);   
-   x86_func_compile(text, data, b, arg_count);
-   
-   /*buffer_writes(text,
-         "\tpush %%eax\n"
-         "\tcall _print\n"
-         "\tpop %%eax\n");*/
-   
-   buffer_writes(text,
-      "\tpush %%ebx\n"
-      "\tpush %%eax\n"
-      "\tcall _concat\n"
-      "\tadd $8, %%esp\n");
-}
-
 void* funcs_ow[][2] = {
-   { "int+", &x86_int_add },
-   { "int-", &x86_int_sub },
-   { "int*", &x86_int_mul },
-   { "int/", &x86_int_div },
-   { "int=", &x86_int_cmp },
-   { "int<", &x86_int_cmp },
-   { "int>", &x86_int_cmp },
-   { "float+", &x86_int_add },
-   { "array+", &x86_array_add },
+   { "int+", "\tadd %%edx, %%eax\n" },
+   { "int-", "\tsub %%edx, %%eax\n" },
+   { "int*", "\tmul %%edx, %%eax\n" },
+   { "int/", "\tdiv %%edx, %%eax\n" },
+   { "int=", "\tadd %%edx, %%eax\n" },
+   { "int<", "\tadd %%edx, %%eax\n" },
+   { "int>", "\tadd %%edx, %%eax\n" },
+   { "float+", "\tadd %%edx, %%eax\n" },
+   { "array+", "\tcall _concat\n" },
 };
 
 void x86_save_reg(buffer_t* text, int args) {
@@ -175,24 +94,23 @@ void x86_call(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count)
  
    struct ir_func* func = arg->call.func;
    struct ir_arg* left_op = list_get(&arg->call.args, 0);
+   
+   for (int i = 0; i < arg->call.args.size; i++) {
+      struct ir_arg* a =  (struct ir_arg*) list_get(&arg->call.args, i);
+      x86_func_compile(text, data, a, arg_count);
+   }
 
    // native function overwrite
    for (int i = 0; i < sizeof(funcs_ow) / sizeof(funcs_ow[0]); i++) {
       char* name = (char*)funcs_ow[i][0];
-      void (*f)(buffer_t*, buffer_t*, struct ir_arg*, struct ir_arg*, int) = funcs_ow[i][1];
+      char* value = (char*)funcs_ow[i][1];
       if (strcmp(name, func->name) == 0) {
-         struct ir_arg* a = list_get(&arg->call.args, 0);
-         struct ir_arg* b = list_get(&arg->call.args, 1);
-         f(text, data, a, b, arg_count);
+         buffer_writes(text, value);
+         
          x86_restore_reg(text, tmpargidx);
          argidx = tmpargidx + 1;
          return;
       }
-   }
-   
-   for (int i = arg->call.args.size - 1; i >= 0; i--) {
-      struct ir_arg* a =  (struct ir_arg*) list_get(&arg->call.args, i);
-      x86_func_compile(text, data, a, arg_count);
    }
    
    // generic function
@@ -201,16 +119,16 @@ void x86_call(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count)
    sprintf(call, 
       "\tcall %s\n"
       "\tadd $%i, %%esp\n",
-      func->name, 4*list_size(&func->params.l));
+      func->name, 4*max(0, list_size(&func->params.l)-4));
    buffer_write(text, call, strlen(call));
    
    x86_restore_reg(text, tmpargidx);
    argidx = tmpargidx + 1;
 }
 
-static void escape(char* dest, char* src) {
+static void escape(char* dest, char* src, int len) {
    int i = 0;
-   for (; src[i] != '\0'; i++) {
+   for (; i < len && src[i] != '\0'; i++) {
       if (src[i] == '\n') {
          dest[i++] = '\\';
          dest[i] = 'n';
@@ -219,6 +137,7 @@ static void escape(char* dest, char* src) {
       }
    }
    dest[i] = src[i];
+   dest[i++] = '\0';
 }
 
 void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count) {
@@ -247,11 +166,18 @@ void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int ar
             len.len = arg->data.size;
             x86_loadd(text, name);
             
-            buffer_writes(data, "%s:\t.byte 0x%02x, 0x%02x, 0x%02x, 0x%02x", name, len.a, len.b, len.c, len.d);
+            buffer_writes(data, "%s: .byte", name);
             for (int i = 0; i < len.len; i++) {
-               buffer_writes(data, ", 0x%02x", (int)((char*)arg->data.ptr)[i]);
+               if (i > 0) {
+                  buffer_writes(data, ",");
+               }
+               buffer_writes(data, " 0x%02x", (int)((char*)arg->data.ptr)[i]);
             }
-            buffer_writes(data, "\n");
+            
+            char escaped[512];
+            escape(escaped, arg->data.ptr+4, arg->data.size-3);
+            
+            buffer_writes(data, " # '%s'\n", escaped);
          }
          break;
       }

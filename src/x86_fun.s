@@ -1,12 +1,8 @@
 .text
         .global _start
 
-_start:        
-        # real program
-        pushl  $5
+_start:
         call   main
-        add    $4, %esp
-        push   %eax
         call   _print
         add    $4, %esp
         
@@ -17,12 +13,14 @@ _start:
 _print:
          push %ebp
          mov %esp, %ebp
-         mov 8(%ebp), %ecx
-         mov (%ecx), %edx         
-         add $4, %ecx
+         
          mov $0x1,%ebx
+         mov %eax, %ecx
+         add $4, %ecx
+         mov (%eax), %edx  
          mov $0x4, %eax
          int $0x80
+         
          mov %ebp, %esp
          pop %ebp
          ret
@@ -30,6 +28,8 @@ _print:
 _malloc:
          push  %ebp
          mov   %esp, %ebp
+         
+         push  %eax
 
          # get heap address
          mov   $0x2D, %eax   # sys_brk
@@ -37,12 +37,13 @@ _malloc:
          int   $0x80
          
          # new heap address
-         mov   0x8(%ebp), %ebx 
+         mov   -0x4(%ebp), %ebx 
          add   %eax, %ebx
          mov   $0x2D, %eax   # sys_brk
          int   $0x80
-         sub   0x8(%ebp), %eax
-         push %eax
+         sub   -0x4(%ebp), %eax
+       
+         add   $4, %esp
          
          mov   %ebp, %esp
          pop   %ebp
@@ -52,9 +53,13 @@ _memcpy:
          push  %ebp
          mov   %esp, %ebp
          
-         mov   0x8(%ebp), %esi
-         mov   0xc(%ebp), %edi
-         mov   0xf(%ebp), %eax
+         #mov   0x8(%ebp), %esi
+         #mov   0xc(%ebp), %edi
+         #mov   0xf(%ebp), %eax
+         
+         mov   %eax, %esi
+         mov   %ebx, %edi
+         mov   %ecx, %eax
          
 _memcpy_1:
          movsb
@@ -62,72 +67,58 @@ _memcpy_1:
          cmp   $0, %eax
          jg    _memcpy_1
          
-         mov   0xc(%ebp), %eax
+         #mov   0xc(%ebp), %eax
+         mov   %ebx, %eax
          
          mov   %ebp, %esp
          pop   %ebp
          ret  
 
 _concat:
-         # init
          push  %ebp
          mov   %esp, %ebp
          
-         # calculate new length
-         add  $4, %ebx
-         mov  8(%ebp), %edx
-         mov  (%edx), %edx
-         add  %edx, %eax
-         mov  0xc(%ebp), %edx
-         mov  (%edx), %edx
-         add  %edx, %eax
-         #push %eax
+         push %eax
+         push %ebx
          
          # alloc memory
-         push  %eax
+         movl   (%eax), %eax # calculate new length
+         addl   (%ebx), %eax
          call  _malloc
-         add   $4, %esp
          push  %eax
          
          # copy string 1: memcpy(src, dest, size)
-         mov   8(%ebp), %eax
-         push  (%eax)
-         mov   -0x4(%ebp), %eax # dest
+         mov   -0x4(%ebp), %ecx
+         mov   (%ecx), %ecx
+         mov   -0xc(%ebp), %ebx # dest
+         add   $4, %ebx
+         mov   -0x4(%ebp), %eax # src
          add   $4, %eax
-         push  %eax
-         mov   8(%ebp), %eax # src
-         add   $4, %eax
-         push  %eax
          call  _memcpy
-         add   $0xc, %esp
          
-         # copy string 2: memcpy(src, dest, size)
-         mov   0xc(%ebp), %eax
-         push  (%eax)
-         mov   8(%ebp), %eax
-         mov   (%eax), %eax
-         add   -0x4(%ebp), %eax # dest
+         # copy string 2: memcpy(src, dest, size)         
+         mov   -0x8(%ebp), %ecx
+         mov   (%ecx), %ecx
+         mov   -0x4(%ebp), %ebx
+         mov   (%ebx), %ebx
+         add   -0xc(%ebp), %ebx # dest
+         add   $4, %ebx
+         mov   -0x8(%ebp), %eax # src
          add   $4, %eax
-         push  %eax
-         mov   0xc(%ebp), %eax # src
-         add   $4, %eax
-         push  %eax
          call  _memcpy
-         add   $0xc, %esp
          
          # final size
-         mov   8(%ebp), %eax
+         mov   -0x4(%ebp), %eax
          mov   (%eax), %eax
-         mov   0xc(%ebp), %ebx
+         mov   -0x8(%ebp), %ebx
          mov   (%ebx), %ebx
-         mov   -0x4(%ebp), %edx
+         mov   -0xc(%ebp), %edx
          add   %ebx, %eax
          mov   %eax, (%edx)
          
-         # print
-         mov   -0x4(%ebp), %eax
+         # set result
+         mov   -0xc(%ebp), %eax
          
-         # out
          mov %ebp, %esp
          pop %ebp
          ret

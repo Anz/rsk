@@ -8,8 +8,8 @@
 #include <string.h>
 #include "parser.h"
 
-char* sc_string(char* s) {
-   int len = strlen(s);
+char* sc_string(char* str) {
+   /*int len = strlen(s);
    int shift = -1;
    s[len-1] = '\0';
    for (int i = 1; i < len; i++) {
@@ -26,7 +26,24 @@ char* sc_string(char* s) {
       }
    }
    
-   return s;
+   return s;*/
+   
+   int len = strlen(str);
+   char* data = malloc(len - 2 + 4); // strlen(str) - 2x appro + 4 bytes length
+   
+   *((int*)data) = len - 2;
+   
+   int di = 4;
+   for (int si = 1; si < len - 1; si++) {
+      if (strncmp("\\n", &str[si], 2) == 0) {
+         data[di++] = '\n';
+         si++;
+      } else {
+         data[di++] = str[si];
+      }
+   }
+   
+   return data;
 }
 
 %}
@@ -44,7 +61,7 @@ str         '[^']*'
 {float}     { float val = (float)atof(yytext); memcpy(&yylval.word, &val, 4); return FLOAT; }
 {int}       { yylval.word = atoi(yytext); return INT; }
 {id}        { yylval.str = strdup(yytext); return ID; }
-{str}       { yylval.data.ptr = strdup(sc_string(yytext)); yylval.data.size = strlen(yylval.data.ptr); return ARRAY; }
+{str}       { yylval.data.ptr = sc_string(yytext); yylval.data.size = strlen(yytext) -2 + 4; return ARRAY; }
 .           { yylval.str = strdup(yytext); return yytext[0]; }
 
 %%
