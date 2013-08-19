@@ -127,7 +127,7 @@ void parse(FILE* in, struct map* f) {
 %token ID INT FLOAT ARRAY
 
 %type <func> var
-%type <arg> cmp expr term factor
+%type <arg> case cmp expr term factor
 %type <list> args
 %type <str> ID '=' '<' '>' '+' '-' '*' '/'
 %type <word> INT FLOAT
@@ -139,7 +139,8 @@ line     : line def
          | def
          ;
 
-def      : var '(' param ')' '=' cmp     { $1->value = $6; }
+def      : var '(' param ')' '=' case    { $1->value = $6; }
+         | var '(' param ')' '=' cmp     { $1->value = $6; }
          | var '=' cmp                   { $1->value = $3; }
          ;
             
@@ -148,6 +149,10 @@ var      : ID                             { $$ = func_cur = func_new($1); $$->li
             
 param    : param ',' ID                   { ir_func_param(func_cur, $3, yylineno); }
          | ID                             { ir_func_param(func_cur, $1, yylineno); }
+         ;
+      
+case     : case '{' cmp                   { $$ = $3 }
+         | '{' cmp                        { $$ = $2 }
          ;
          
 cmp      : cmp '=' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
