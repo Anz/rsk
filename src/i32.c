@@ -8,44 +8,60 @@
 #include "x86_fun.c"
 
 int data_id = 0;
+int argidx = 0;
 
 void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count);
 
-void x86_loadp(struct buffer* buf, int param) {
-   buffer_writes(buf, 
-      "\tmov %i(%%ebp), %%eax\n"
-      "\tpush %%eax\n",
-      (1+param)*4);
+void x86_loadp(struct buffer* text, int param) {
+   /*buffer_writes(buf, 
+      "\tpush %i(%%ebp)\n",
+      (1+param)*4);*/
+      
+   int index = (1+param)*4;
+      
+   switch (argidx) {
+      case 0: buffer_writes(text, "\tmovl %i(%%ebp), %%eax\n", index); break;
+      case 1: buffer_writes(text, "\tmovl %i(%%ebp), %%ebx\n", index); break;
+      case 2: buffer_writes(text, "\tmovl %i(%%ebp), %%ecx\n", index); break;
+      case 3: buffer_writes(text, "\tmovl %i(%%ebp), %%edx\n", index); break;
+      default: buffer_writes(text, "\tpush %i(%%ebp)\n", index); break;
+   }
+   
+   argidx++;
 }
 
-void x86_loadv(buffer_t* text, int arg, bool write) {
-   buffer_writes(text, "\tpush $%i\n", arg);
+void x86_loadv(buffer_t* text, int arg) {
+   //buffer_writes(text, "\tpush $%i\n", arg);
    
-   if (write) {
-      buffer_writes(text,      
-         "\tpop %%ecx\n"
-         "\tmov (%%ecx),%%edx\n"
-         "\tadd $0x4,%%ecx\n"
-         "\tmov $0x1,%%ebx\n"
-         "\tmov $0x4,%%eax\n"
-         "\tint $0x80\n");
+   switch (argidx) {
+      case 0: buffer_writes(text, "\tmovl $%i, %%eax\n", arg); break;
+      case 1: buffer_writes(text, "\tmovl $%i, %%ebx\n", arg); break;
+      case 2: buffer_writes(text, "\tmovl $%i, %%ecx\n", arg); break;
+      case 3: buffer_writes(text, "\tmovl $%i, %%edx\n", arg); break;
+      default: buffer_writes(text, "\tpush $%i\n", arg); break;
    }
+   
+   argidx++;
 }
 
 void x86_loadd(buffer_t* text, char* label) {
-   buffer_writes(text, 
-      "\tmov $%s, %%eax\n"
-      "\tpush %%eax\n",
-      label);
-      
-  buffer_writes(text,      
-         "\tpop %%ecx\n"
-         "\tmov (%%ecx),%%edx\n"
-         "\tadd $4, %%ecx\n"
-         "\tmov $0x1,%%ebx\n"
-         "\tmov $0x4,%%eax\n"
-         "\tint $0x80\n",
-         label);
+   /*buffer_writes(text, 
+      "\tpush $%s\n",
+      label);*/
+         
+  /*buffer_writes(text,
+         "\tcall _print\n"
+         "\tadd $4, %%esp\n");*/
+         
+  switch (argidx) {
+      case 0: buffer_writes(text, "\tmovl $%s, %%eax\n", label); break;
+      case 1: buffer_writes(text, "\tmovl $%s, %%ebx\n", label); break;
+      case 2: buffer_writes(text, "\tmovl $%s, %%ecx\n", label); break;
+      case 3: buffer_writes(text, "\tmovl $%s, %%edx\n", label); break;
+      default: buffer_writes(text, "\tpush $%s\n", label); break;
+   }
+   
+   argidx++;
 }
 
 void x86_int_add(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
@@ -53,10 +69,10 @@ void x86_int_add(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg
    x86_func_compile(text, data, b, arg_count);
    
    buffer_writes(text, 
-      "\tpop %%eax\n"
-      "\tpop %%edx\n"
+      /*"\tpop %%eax\n"
+      "\tpop %%edx\n"*/
       "\tadd %%edx, %%eax\n"
-      "\tpush %%eax\n");
+      /*"\tpush %%eax\n"*/);
 }
 
 void x86_int_sub(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
@@ -64,10 +80,10 @@ void x86_int_sub(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg
    x86_func_compile(text, data, b, arg_count);
    
    buffer_writes(text, 
-      "\tpop %%eax\n"
-      "\tpop %%edx\n"
+      /*"\tpop %%eax\n"
+      "\tpop %%edx\n"*/
       "\tsub %%edx, %%eax\n"
-      "\tpush %%eax\n");
+      /*"\tpush %%eax\n"*/);
 }
 
 void x86_int_mul(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
@@ -75,10 +91,10 @@ void x86_int_mul(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg
    x86_func_compile(text, data, b, arg_count);
    
    buffer_writes(text, 
-      "\tpop %%eax\n"
-      "\tpop %%edx\n"
+      /*"\tpop %%eax\n"
+      "\tpop %%edx\n"*/
       "\tmul %%edx, %%eax\n"
-      "\tpush %%eax\n");
+      /*"\tpush %%eax\n"*/);
 }
 
 void x86_int_div(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
@@ -86,10 +102,10 @@ void x86_int_div(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg
    x86_func_compile(text, data, b, arg_count);
    
    buffer_writes(text, 
-      "\tpop %%eax\n"
-      "\tpop %%edx\n"
+      /*"\tpop %%eax\n"
+      "\tpop %%edx\n"*/
       "\tdiv %%edx, %%eax\n"
-      "\tpush %%eax\n");
+      /*"\tpush %%eax\n"*/);
 }
 
 void x86_int_cmp(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
@@ -97,15 +113,26 @@ void x86_int_cmp(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg
    x86_func_compile(text, data, b, arg_count);
    
    buffer_writes(text, 
-      "\tpop %%eax\n"
-      "\tpop %%edx\n"
+      /*"\tpop %%eax\n"
+      "\tpop %%edx\n"*/
       "\tadd %%edx, %%eax\n"
-      "\tpush %%eax\n");
+      /*"\tpush %%eax\n"*/);
 }
 
 void x86_array_add(buffer_t* text, buffer_t* data, struct ir_arg* a, struct ir_arg* b, int arg_count) {
-   x86_func_compile(text, data, a, arg_count);
+   x86_func_compile(text, data, a, arg_count);   
    x86_func_compile(text, data, b, arg_count);
+   
+   /*buffer_writes(text,
+         "\tpush %%eax\n"
+         "\tcall _print\n"
+         "\tpop %%eax\n");*/
+   
+   buffer_writes(text,
+      "\tpush %%ebx\n"
+      "\tpush %%eax\n"
+      "\tcall _concat\n"
+      "\tadd $8, %%esp\n");
 }
 
 void* funcs_ow[][2] = {
@@ -120,7 +147,32 @@ void* funcs_ow[][2] = {
    { "array+", &x86_array_add },
 };
 
+void x86_save_reg(buffer_t* text, int args) {
+   switch (args) {
+      case 0: break;
+      case 1:  buffer_writes(text, "\tpush %%eax\n"); break;
+      case 2:  buffer_writes(text, "\tpush %%eax\n\tpush %%ebx\n"); break;
+      case 3:  buffer_writes(text, "\tpush %%eax\n\tpush %%ebx\n\tpush %%ecx\n"); break;
+      default:  buffer_writes(text, "\tpush %%eax\n\tpush %%ebx\n\tpush %%ecx\n\tpush %%edx\n"); break;
+   }
+}
+
+void x86_restore_reg(buffer_t* text, int args) {
+   switch (args) {
+      case 0: break;
+      case 1:  buffer_writes(text, "\tmov %%eax, %%ebx\n\tpop %%eax\n"); break;
+      case 2:  buffer_writes(text, "\tmov %%eax, %%ecx\n\tpop %%ebx\n\tpop %%eax\n"); break;
+      case 3:  buffer_writes(text, "\tmov %%eax, %%edx\n\tpop %%ecx\n\tpop %%ebx\n\tpop %%eax\n"); break;
+      default:  buffer_writes(text, "\tmov %%eax, %%esi\n\tpop %%edx\n\tpop %%ecx\n\tpop %%ebx\n\tpush %%eax\n\tpush %%esi\n"); break;
+   }
+}
+
 void x86_call(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count) {
+   int tmpargidx = argidx;
+   argidx = 0;
+   
+   x86_save_reg(text, tmpargidx);
+ 
    struct ir_func* func = arg->call.func;
    struct ir_arg* left_op = list_get(&arg->call.args, 0);
 
@@ -132,6 +184,8 @@ void x86_call(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count)
          struct ir_arg* a = list_get(&arg->call.args, 0);
          struct ir_arg* b = list_get(&arg->call.args, 1);
          f(text, data, a, b, arg_count);
+         x86_restore_reg(text, tmpargidx);
+         argidx = tmpargidx + 1;
          return;
       }
    }
@@ -146,9 +200,12 @@ void x86_call(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count)
    memset(call, 0, sizeof(call));
    sprintf(call, 
       "\tcall %s\n"
-      "\tsub $%i, %%esp\n",
-      func->name, list_size(&func->params.l));
+      "\tadd $%i, %%esp\n",
+      func->name, 4*list_size(&func->params.l));
    buffer_write(text, call, strlen(call));
+   
+   x86_restore_reg(text, tmpargidx);
+   argidx = tmpargidx + 1;
 }
 
 static void escape(char* dest, char* src) {
@@ -176,7 +233,7 @@ void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int ar
       }
       case IR_ARG_DATA: {
          if (arg->data.size == 4) {
-            x86_loadv(text, arg->data.word, false);
+            x86_loadv(text, arg->data.word);
          } else {
             char name[512];
             
@@ -204,7 +261,7 @@ void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int ar
 struct buffer i32_compile(struct map funcs) {
 
    struct buffer text;
-   buffer_init(&text, 512);
+   buffer_init(&text, 4096);
    
    struct buffer data;
    buffer_init(&data, 512);
@@ -220,6 +277,8 @@ struct buffer i32_compile(struct map funcs) {
       if (f->value == NULL) {
          continue;
       }
+      
+      argidx = 0;
    
       buffer_writes(&text,
          "\n%s:\n"

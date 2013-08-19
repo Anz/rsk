@@ -5,11 +5,15 @@
 
 static void inc(struct buffer* buf) {
    buf->capacity *= 2;
-   buf->data = realloc(buf->data, buf->capacity); 
+   buf->data = realloc(buf->data, buf->capacity);
+   if (buf->data == NULL) {
+      printf("buffer.c#inc cannot alloc more memory\n");
+      exit(1);
+   }
 };
 
 static void check_bounds(struct buffer* buf, size_t size) {
-   if (buf->size + size > buf->capacity) {
+   if (buf->size + size >= buf->capacity) {
       inc(buf);
    }
 }
