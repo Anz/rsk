@@ -129,4 +129,10 @@ _lt:
          mov   $0, %eax
 _lt_end: ret
 
+mod:
+         xor   %edx, %edx
+         idiv  %ebx
+         mov   %edx, %eax
+         ret
+
          

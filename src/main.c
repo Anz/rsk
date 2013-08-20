@@ -14,24 +14,16 @@
 #include <getopt.h>
 #include <stdbool.h>
 
+#include <signal.h>
+#include <execinfo.h>
+
+
 extern void parse(FILE*, struct map*);
 extern char* yycode();
 
-static char param_type(int category) {
-   return (char) (65 + category);
-}
+void bt_sighandler(int sig, siginfo_t *info,
+                   void *secret);
 
-static char* arg_type(struct ir_type* type, struct ir_param* param) {
-   if (type != NULL) {
-      return type->name;
-   } else {
-      char* str = malloc(2);
-      memset(str, 0, 2);
-      str[0] = param_type(param->category);
-      return str;
-   }
-   return "";
-}
 
 void print_arg(struct ir_arg* arg) {
    switch (arg->arg_type) {
@@ -42,17 +34,17 @@ void print_arg(struct ir_arg* arg) {
          }
          
          struct ir_func* f = arg->call.func;
-         printf("\t(type: %s)\tcall %s\n", arg_type(ir_arg_type(arg), ir_arg_param(arg)), f->name);
+         printf("\t(type: %s)\tcall %s\n", f->type->name, f->name);
          
          break;
       case IR_ARG_PARAM:
-         printf("\t(type: %s)\tload %s\n", arg_type(arg->call.param->type, arg->call.param), arg->call.param->name);
+         printf("\t(type: unknown)\tload %s\n", arg->call.param->name);
          break;
       case IR_ARG_DATA:
          if (arg->data.size == 4) {
-            printf("\t(type: %s)\tload #%i\n", arg_type(arg->data.type, NULL), arg->data.word); 
+            printf("\t(type: %s)\tload #%i\n", arg->data.type->name, arg->data.word); 
          } else {
-            printf("\t(type: %s)\tload '%s'\n", arg_type(arg->data.type, NULL), (char*)arg->data.ptr);
+            printf("\t(type: %s)\tload '%s'\n", arg->data.type->name, (char*)arg->data.ptr);
          }
          break;
       default: printf("\tunknown %i\n", arg->arg_type); break;
@@ -64,23 +56,18 @@ void print_func(struct ir_func* f) {
       return;
    }
    
-   struct ir_param* param = NULL;
-   if (f->type_param < f->params.l.size) {
-      param = ((struct map_entry*)list_get(&f->params.l, f->type_param))->data;
-   }
-   
-   printf("%s %s", arg_type(f->type, param), f->name);
+   printf("%s %s", f->type->name, f->name);
    
    if (f->params.l.size > 0) {
       map_it* it = map_iterator(&f->params);
       struct ir_param* param = (struct ir_param*) it->data;
       
-      printf("(%s %s", arg_type(param->type, param), param->name);
+      printf("(%s %s", "unknown", param->name);
       
       it = map_next(it);
       while (it != NULL) {
          param = (struct ir_param*) it->data;
-         printf(", %s %s", arg_type(param->type, param), param->name);
+         printf(", %s %s", "unknown", param->name);
          it = map_next(it);
       }
       printf(")");
@@ -99,6 +86,15 @@ void print_usage() {
 }
 
 int main (int argc, char *argv[]) {
+   struct sigaction sa;
+
+  sa.sa_sigaction = (void *)bt_sighandler;
+  sigemptyset (&sa.sa_mask);
+  sa.sa_flags = SA_RESTART | SA_SIGINFO;
+
+  sigaction(SIGSEGV, &sa, NULL);
+  sigaction(SIGUSR1, &sa, NULL);
+
    int option = 0;
    FILE* in = NULL;
    FILE* out = stdout;
@@ -137,8 +133,19 @@ int main (int argc, char *argv[]) {
    fclose(in);
    
    // do semantic check
-   for (map_it* it = map_iterator(&funcs); it != NULL; it = map_next(it)) {
+   /*for (map_it* it = map_iterator(&funcs); it != NULL; it = map_next(it)) {
       semantic_check((struct ir_func*)it->data, &errors);
+   }*/
+   struct list args;
+   list_init(&args);
+   
+   semantic_check(&funcs, map_get(&funcs, "main", 5), args, &errors);
+   for (map_it* it = map_iterator(&funcs); it != NULL; it = it->next) {
+      struct ir_func* f = it->data;
+      if (f->type == NULL) {
+         printf("remove function %s\n", f->name);
+         map_set(&funcs, f->name, strlen(f->name)+1, NULL);
+      }
    }
    
    // print tree
@@ -175,15 +182,49 @@ int main (int argc, char *argv[]) {
    fclose(out);*/
    
    // free functions
-   for (map_it* it = map_iterator(&funcs); it != NULL; it = map_next(it)) {
+   /*for (map_it* it = map_iterator(&funcs); it != NULL; it = map_next(it)) {
       struct ir_func* f = it->data;
       ir_func_clear(f);
    }
-   map_clear(&funcs);
+   map_clear(&funcs);*/
    
    // free native representation
    //x86_free(nr);
    //nr.symbols = NULL;
    
    return 0;
+}
+
+/* get REG_EIP from ucontext.h */
+#include <ucontext.h>
+
+void bt_sighandler(int sig, siginfo_t *info,
+                   void *secret) {
+
+  void *trace[16];
+  char **messages = (char **)NULL;
+  int i, trace_size = 0;
+  ucontext_t *uc = (ucontext_t *)secret;
+
+  /* Do something useful with siginfo_t */
+  if (sig == SIGSEGV)
+    printf("Got signal %d, faulty address is %p, "
+           "from %p\n", sig, info->si_addr, 
+           (void*)uc->uc_mcontext.gregs[REG_EIP]);
+  else
+    printf("Got signal %d#92;\n", sig);
+
+  trace_size = backtrace(trace, 16);
+  /* overwrite sigaction with caller's address */
+  trace[1] = (void *) uc->uc_mcontext.gregs[REG_EIP];
+
+  messages = backtrace_symbols(trace, trace_size);
+  /* skip first stack frame (points here) */
+  for (i=1; i<trace_size; ++i)
+  {
+    char syscom[256];
+    sprintf(syscom,"addr2line %p -e %s", trace[i] , "bin/rev" ); //last parameter is the name of this app
+    system(syscom);
+  }
+  exit(0);
 }

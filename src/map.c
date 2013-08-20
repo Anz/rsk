@@ -13,6 +13,18 @@ static struct map_entry* map_get_entry(struct map* m, void* key, size_t key_size
    return NULL;
 }
 
+/*static struct list_it* map_get_entry2(struct map* m, void* key, size_t key_size) {
+   for (list_it* it = list_iterator(&m->l); it != NULL; it = it->next) {
+      struct map_entry* e = it->data;
+      
+      if (e->key_size == key_size && memcmp(e->key, key, key_size) == 0) {
+         return it;
+      } 
+   }
+   
+   return NULL;
+}*/
+
 void map_init(struct map* m) {
    list_init(&m->l);
 }
@@ -42,6 +54,22 @@ void* map_get(struct map* m, void* key, size_t key_size) {
 
 void map_set(struct map* m, void* key, size_t key_size, void* data) {
    struct map_entry* e = map_get_entry(m, key, key_size);
+
+   // remove node
+   if (data == NULL) {
+      struct map_entry* prev = e->prev;
+      struct map_entry* next = e->next;
+      
+      if (prev != NULL) {
+         prev->next = next;
+      }
+      if (next != NULL) {
+         next->prev = prev;
+      }
+      list_remove_item(&m->l, e);
+      free(e);
+      return;
+   }
    
    if (e == NULL) {
       e = malloc(sizeof(struct map_entry));
@@ -50,6 +78,7 @@ void map_set(struct map* m, void* key, size_t key_size, void* data) {
       e->key_size = key_size;
       
       if (m->l.last != NULL) {
+         e->prev = ((struct map_entry*) m->l.last->data);
          ((struct map_entry*) m->l.last->data)->next = e;
       }
       list_add(&m->l, e);

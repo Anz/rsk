@@ -179,7 +179,7 @@ void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int ar
                   buffer_writes(data, ",");
                }
                buffer_writes(data, " 0x%02x", (int)((char*)arg->data.ptr)[i]);
-            }
+            }  
             
             char escaped[512];
             escape(escaped, arg->data.ptr+4, arg->data.size-3);
@@ -206,9 +206,8 @@ struct buffer i32_compile(struct map funcs) {
    // write native functions to buffer 
    buffer_write(&text, x86_fun_s, sizeof(x86_fun_s));
    
-   for (struct list_item* item = funcs.l.first; item != NULL; item = item->next) {
-      struct map_entry* entry = (struct map_entry*) item->data;
-      struct ir_func* f = entry->data;
+   for (map_it* it = map_iterator(&funcs); it != NULL; it = it->next) {
+      struct ir_func* f = it->data;
    
       if (list_size(&f->cases) == 0) {
          continue;
@@ -217,12 +216,10 @@ struct buffer i32_compile(struct map funcs) {
       buffer_writes(&text,
          "\n%s:\n"
          "\tpush %%ebp\n"
-         "\tmov %%esp, %%ebp\n"
-         "\tpush %%eax\n"
-         "\tpush %%ebx\n"
-         "\tpush %%ecx\n"
-         "\tpush %%edx\n",
+         "\tmov %%esp, %%ebp\n",
          f->name);
+      
+      x86_save_reg(&text, map_size(&f->params));
       
       for (int i = 0; i < list_size(&f->cases); i++) {
       

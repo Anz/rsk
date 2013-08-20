@@ -103,6 +103,17 @@ void* list_remove(struct list* l, int index) {
    return data;
 }
 
+void* list_remove_item(struct list* l, void* data) {
+   int i = 0;
+   for (list_it* it = list_iterator(l); it != NULL; it = it->next) {
+      if (it->data == data) {
+         return list_remove(l, i);
+      }
+      i++;
+   }
+
+}
+
 list_it* list_iterator(struct list* l) {
    return l->first;
 }

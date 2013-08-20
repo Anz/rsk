@@ -8,7 +8,7 @@ struct ir_func* ir_func_init(char* name, int lineno) {
    f->name = strdup(name);
    map_init(&f->params);
    list_init(&f->cases);
-   f->lineno;
+   f->lineno = lineno;
    return f;
 }
 
@@ -67,7 +67,6 @@ struct ir_param* ir_func_param(struct ir_func* func, char* name, int lineno) {
    memset(p, 0, sizeof(*p));
    p->name = strdup(name);
    p->index = map_size(&func->params);
-   p->category = p->index;
    p->lineno = lineno;
    
    map_set(&func->params, p->name, strlen(p->name) + 1, p);
@@ -114,6 +113,8 @@ struct ir_arg* ir_arg_data(char* ptr, size_t size, struct ir_type* type, int lin
 
 
 struct ir_arg* ir_arg_call(struct map* funcs, struct ir_func* func, char* name, struct list* args, int lineno) {
+   func->ref++;
+
    struct ir_arg* arg = malloc(sizeof(*arg));
    memset(arg, 0, sizeof(*arg));
    arg->lineno = lineno;
@@ -143,39 +144,76 @@ struct ir_arg* ir_arg_call(struct map* funcs, struct ir_func* func, char* name, 
    return arg;
 }
 
+// COPY
+struct ir_func* ir_func_cpy(struct ir_func* f) {
+   struct ir_func* cpy = ir_func_init(f->name, f->lineno);
+   cpy->type = f->type;
+   ir_params_cpy(cpy, f->params);
+   cpy->cases = ir_cases_cpy(cpy, f->cases);
+   return cpy;
+}
+
+void ir_params_cpy(struct ir_func* f, struct map params) {   
+   for (map_it* it = map_iterator(&params); it != NULL; it = it->next) {
+      struct ir_param* p = it->data;
+      struct ir_param* param = ir_func_param(f, p->name, p->lineno);
+   }
+}
+
+struct ir_arg* ir_arg_cpy(struct ir_func* f, struct ir_arg* a) {
+   if (a == NULL) {
+      return NULL;
+   }
+
+   switch (a->arg_type) {
+      case IR_ARG_CALL: {
+         struct ir_arg* arg = malloc(sizeof(*arg));
+         memset(arg, 0, sizeof(*arg));
+         arg->arg_type = IR_ARG_CALL;
+         arg->call.func = a->call.func;
+         arg->lineno = a->lineno;
+         for (list_it* it = list_iterator(&a->call.args); it != NULL; it = it->next) {
+            list_add(&arg->call.args, ir_arg_cpy(f, it->data));
+         }
+         return arg;
+      }
+      case IR_ARG_PARAM: {
+         struct ir_arg* arg = malloc(sizeof(*arg));
+         memset(arg, 0, sizeof(*arg));
+         arg->arg_type = IR_ARG_PARAM;
+         arg->call.param = ((struct map_entry*)list_get(&f->params.l, a->call.param->index))->data;
+         printf("param cmp %i -> %i\n", a->call.param->index, arg->call.param->index);
+         arg->lineno = a->lineno;
+         for (list_it* it = list_iterator(&a->call.args); it != NULL; it = it->next) {
+            list_add(&arg->call.args, ir_arg_cpy(f, it->data));
+         }
+         return arg;
+      }
+      case IR_ARG_DATA:
+         return ir_arg_data(a->data.ptr, a->data.size, a->data.type, a->lineno);
+   }
+}
+
+struct list ir_cases_cpy(struct ir_func* f, struct list cases) {
+   struct list cpy;
+   list_init(&cpy);
+   for (list_it* it = list_iterator(&cases); it != NULL; it = it->next) {
+      struct ir_case* c = it->data;
+      list_add(&cpy, ir_func_case(ir_arg_cpy(f, c->cond), ir_arg_cpy(f, c->func), c->lineno));
+   }
+   return cpy;
+}
+
 // RESOLVING
-struct ir_type* ir_arg_type(struct ir_arg* arg) {
+/*struct ir_type* ir_arg_type(struct ir_arg* arg) {
    switch (arg->arg_type) {
       case IR_ARG_DATA: return arg->data.type;
       case IR_ARG_PARAM: return arg->call.param->type;
-      case IR_ARG_CALL: {
-         if (arg->call.func->type != NULL) {
-            return arg->call.func->type;
-         }
-         int param = arg->call.func->type_param;
-         arg = list_get(&arg->call.args, param);
-         return ir_arg_type(arg);
-      }
+      case IR_ARG_CALL: return arg->call.func->type;
    }
    
    return NULL;
-}
-
-struct ir_param* ir_arg_param(struct ir_arg* arg) {
-   switch (arg->arg_type) {
-      case IR_ARG_PARAM: return arg->call.param;
-      case IR_ARG_CALL: {
-         if (arg->call.func->type != NULL) {
-            return NULL;
-         }      
-         int param = arg->call.func->type_param;
-         arg = list_get(&arg->call.args, param);
-         return ir_arg_param(arg);
-      }
-   }
-   
-   return NULL;
-}
+}*/
 
 // ERROR
 void ir_print_err(struct ir_error err) {

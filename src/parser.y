@@ -45,12 +45,10 @@ static struct ir_func* binary_op(char* name, struct ir_type* arg, struct ir_type
    struct ir_param* a = malloc(sizeof(*a));
    memset(a, 0, sizeof(*a));
    a->name = strdup("a");
-   a->type = arg;
    
    struct ir_param* b = malloc(sizeof(*b));
    memset(b, 0, sizeof(*b));
    b->name = strdup("b");
-   b->type = arg;
    
    
    // setup functions
@@ -66,14 +64,7 @@ void parse(FILE* in, struct map* f) {
    // init structures
    funcs = f;
    
-   // setup functions
-   binary_op("+", NULL, NULL);
-   binary_op("-", NULL, NULL);
-   binary_op("*", NULL, NULL);
-   binary_op("/", NULL, NULL);
-   binary_op("=", NULL, NULL);
-   binary_op("<", NULL, NULL);
-   binary_op(">", NULL, NULL);
+   
    
 
    // setup types
@@ -106,6 +97,16 @@ void parse(FILE* in, struct map* f) {
    map_init(&type_array->ops);
    map_set(&type_array->ops, "+", 2, binary_op("array+", type_array, type_array));
    map_set(&type_array->ops, "=", 2, binary_op("array=", type_array, type_bool));
+   
+   // setup functions
+   binary_op("+", NULL, NULL);
+   binary_op("-", NULL, NULL);
+   binary_op("*", NULL, NULL);
+   binary_op("/", NULL, NULL);
+   binary_op("=", NULL, NULL);
+   binary_op("<", NULL, NULL);
+   binary_op(">", NULL, NULL);
+   binary_op("mod", NULL, type_int);
 
    // parsing
    yyin = in;

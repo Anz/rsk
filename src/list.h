@@ -23,6 +23,7 @@ int list_size(struct list* l);
 void* list_get(struct list* l, int index);
 void list_add(struct list* l, void* data);
 void* list_remove(struct list* l, int index);
+void* list_remove_item(struct list* l, void* data);
 list_it* list_iterator(struct list* l);
 list_it* list_next(list_it* it);
 

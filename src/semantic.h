@@ -4,11 +4,8 @@
 #include "list.h"
 #include "ir.h"
 
-struct semantic_type {
-   struct ir_type* type;
-   int param;
-};
 
-struct semantic_type semantic_check(struct ir_func* f, struct list* errors);
+//struct semantic_type semantic_check(struct ir_func* f, struct list* errors);
+struct ir_func* semantic_check(struct map* funcs, struct ir_func* f, struct list args, struct list* errors);
 
 #endif

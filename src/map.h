@@ -8,6 +8,7 @@ struct map_entry {
    void* key;
    size_t key_size;
    void* data;
+   struct map_entry* prev;
    struct map_entry* next;
 };
 

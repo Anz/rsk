@@ -23,8 +23,6 @@ struct ir_type {
 struct ir_param {
    char* name;
    int index;
-   struct ir_type* type;
-   int category;
    int lineno;
 };
 
@@ -62,8 +60,8 @@ struct ir_func {
    struct map params;
    struct list cases;
    struct ir_type* type;
-   int type_param;
    int lineno;
+   int ref;
 };
 
 struct ir_error {
@@ -83,9 +81,14 @@ struct ir_arg* ir_arg_word(int word, struct ir_type* type, int lineno);
 struct ir_arg* ir_arg_data(char* ptr, size_t size, struct ir_type* type, int lineno);
 struct ir_arg* ir_arg_call(struct map* funcs, struct ir_func* func, char* name, struct list* args, int lineno);
 
+// copy
+struct ir_func* ir_func_cpy(struct ir_func* f);
+void ir_params_cpy(struct ir_func* f, struct map params);
+struct ir_arg* ir_arg_cpy(struct ir_func* f, struct ir_arg* a);
+struct list ir_cases_cpy(struct ir_func* f, struct list cases);
+
 // resolving
-struct ir_type* ir_arg_type(struct ir_arg* arg);
-struct ir_param* ir_arg_param(struct ir_arg* arg);
+//struct ir_type* ir_arg_type(struct ir_arg* arg);
 
 // error function
 void ir_print_err(struct ir_error err);
