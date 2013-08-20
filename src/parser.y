@@ -69,6 +69,8 @@ void parse(FILE* in, struct map* f) {
    // setup functions
    binary_op("+", NULL, NULL);
    binary_op("-", NULL, NULL);
+   binary_op("*", NULL, NULL);
+   binary_op("/", NULL, NULL);
    binary_op("=", NULL, NULL);
    binary_op("<", NULL, NULL);
    binary_op(">", NULL, NULL);

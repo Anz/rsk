@@ -7,6 +7,8 @@
 // include x86 native routines
 #include "x86_fun.c"
 
+struct list func_req;
+
 int data_id = 0;
 int argidx = 0;
 
@@ -64,7 +66,7 @@ void* funcs_ow[][2] = {
    { "int+", "\tadd %%ebx, %%eax\n" },
    { "int-", "\tsub %%ebx, %%eax\n" },
    { "int*", "\tmul %%ebx, %%eax\n" },
-   { "int/", "\tdiv %%ebx, %%eax\n" },
+   { "int/", "\txor %%edx, %%edx\n\tidiv %%ebx\n" },
    { "int=", "\tsub %%ebx, %%eax\n" },
    { "int<", "\tcall _lt\n" },
    { "int>", "\tcall _gt\n" },
@@ -197,6 +199,9 @@ struct buffer i32_compile(struct map funcs) {
    struct buffer data;
    buffer_init(&data, 512);
    buffer_writes(&data, ".data\n");
+   
+   list_init(&func_req);
+   list_add(&func_req, "main");
    
    // write native functions to buffer 
    buffer_write(&text, x86_fun_s, sizeof(x86_fun_s));
