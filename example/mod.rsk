@@ -1,7 +1,7 @@
 // Author: rsk
 //
 // Description:
-// Converts an integer x to string with base b.
+// Returns the remainder of x divided by y
 //
 // Example:
 // mod(15, 10) = 5
