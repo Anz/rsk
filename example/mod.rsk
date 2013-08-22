@@ -4,9 +4,8 @@
 // Converts an integer x to string with base b.
 //
 // Example:
-// itao(15, DEC) = '15'
-// itao(15, HEX) = 'f'
-// itao(15, BIN) = '1111'
+// mod(15, 10) = 5
+// mod(6, 3) = 0
 
 mod2(x,y) = { mod2(x - y, y), x > y
             { x, 0
@@ -31,4 +30,4 @@ itoa(x,b) =  { itoa(x / b, b) + itoa(mod2(x, b), b), x >= b
           
          
 
-main = itoa(15, 10) + '\n'
+main = itoa(mod2(6,3), 10) + '\n'
