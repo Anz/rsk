@@ -182,7 +182,6 @@ struct ir_arg* ir_arg_cpy(struct ir_func* f, struct ir_arg* a) {
          memset(arg, 0, sizeof(*arg));
          arg->arg_type = IR_ARG_PARAM;
          arg->call.param = ((struct map_entry*)list_get(&f->params.l, a->call.param->index))->data;
-         printf("param cmp %i -> %i\n", a->call.param->index, arg->call.param->index);
          arg->lineno = a->lineno;
          for (list_it* it = list_iterator(&a->call.args); it != NULL; it = it->next) {
             list_add(&arg->call.args, ir_arg_cpy(f, it->data));

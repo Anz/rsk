@@ -132,10 +132,6 @@ int main (int argc, char *argv[]) {
    parse(in, &funcs);
    fclose(in);
    
-   // do semantic check
-   /*for (map_it* it = map_iterator(&funcs); it != NULL; it = map_next(it)) {
-      semantic_check((struct ir_func*)it->data, &errors);
-   }*/
    struct list args;
    list_init(&args);
    
@@ -143,7 +139,6 @@ int main (int argc, char *argv[]) {
    for (map_it* it = map_iterator(&funcs); it != NULL; it = it->next) {
       struct ir_func* f = it->data;
       if (f->type == NULL) {
-         printf("remove function %s\n", f->name);
          map_set(&funcs, f->name, strlen(f->name)+1, NULL);
       }
    }

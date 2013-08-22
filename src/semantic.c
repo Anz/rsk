@@ -31,8 +31,6 @@ static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg,
             return NULL;
          }
          
-         printf("calls %.10s\n", arg->call.func->name);
-         
          struct list arg_types;
          list_init(&arg_types);
          
@@ -76,7 +74,6 @@ struct ir_func* semantic_check(struct map* funcs, struct ir_func* f, struct list
    }
 
    if (list_size(&f->cases) == 0) {
-      printf("type1: %s %s\n", f->name, ((struct ir_type*)list_get(&args, 0))->name);
       return f;
    }
    
@@ -91,30 +88,23 @@ struct ir_func* semantic_check(struct map* funcs, struct ir_func* f, struct list
    
    char* name = malloc(512);
    concat(name, '_', num+1, strs);
-   //printf("name: %s\n", f->name);
    
    struct ir_func* func_new = NULL;
    
    
    func_new = map_get(funcs, name, strlen(name)+1);
    if (func_new != NULL) {
-      printf("found %s %p\n", func_new->name, func_new->type);
       if ( (num == 0 && func_new->type != NULL) || (num > 0) ) {
          return func_new;
       }
-   } else {
-      //if (f->ref > 1) {  
-         func_new = ir_func_cpy(f);
-         func_new->ref = 1;
-         f->ref--;
-      /*} else {
-         func_new = f;
-         map_set(funcs, f->name, strlen(f->name)+1, NULL);
-      }*/
+   } else {  
+      func_new = ir_func_cpy(f);
+      func_new->ref = 1;
+      f->ref--;
       func_new->name = name;
       map_set(funcs, name, strlen(name)+1, func_new);
    }
-   printf("start for cases %.10s\n", f->name);
+   
    int j;
    for (int i = 0; i < list_size(&func_new->cases); i++) {
       struct ir_case* c = list_get(&func_new->cases, i);
@@ -128,7 +118,7 @@ struct ir_func* semantic_check(struct map* funcs, struct ir_func* f, struct list
          break;
       }
    }
-    printf("end for cases %.10s\n", f->name);
+   
    
    if (func_new->type == NULL) {
       printf("infinity loop in %s\n", f->name);
@@ -150,6 +140,5 @@ struct ir_func* semantic_check(struct map* funcs, struct ir_func* f, struct list
       }
    }
    
-   printf("type3: %p\n", func_new->type);
    return func_new;
 }
