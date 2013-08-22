@@ -53,11 +53,13 @@ sign        [+-]
 int         {sign}?(0|[1-9][0-9]*)
 float       {int}\.[0-9]+(e{sign}?[0-9]+)?
 str         '[^']*'
+comment     \/\/[^\n]*
 
 %%
 
 [ \t]       ;
 [\n]        { yylineno++; return yytext[0]; }
+{comment}   ;
 {float}     { float val = (float)atof(yytext); memcpy(&yylval.word, &val, 4); return FLOAT; }
 {int}       { yylval.word = atoi(yytext); return INT; }
 {id}        { yylval.str = strdup(yytext); return ID; }

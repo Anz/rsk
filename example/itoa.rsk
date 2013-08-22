@@ -1,6 +1,18 @@
+// Author: rsk
+//
+// Description:
+// Converts an integer x to string with base b.
+//
+// Example:
+// itao(15, DEC) = '15'
+// itao(15, HEX) = 'f'
+// itao(15, BIN) = '1111'
 
-       
-itoa(x,b) =  { itoa(x / b, b) + itoa(mod(x, b), b), x > b
+DEC = 10
+HEX = 16
+BIN = 2
+
+itoa(x,b) =  { itoa(x / b, b) + itoa(mod(x, b), b), x > b // should be x >= b
              { '0', x = 0
              { '1', x = 1
              { '2', x = 2
@@ -20,4 +32,4 @@ itoa(x,b) =  { itoa(x / b, b) + itoa(mod(x, b), b), x > b
           
          
 
-main = itoa(1337, 2) + '\n'   
+main = itoa(15, BIN) + '\n'   
