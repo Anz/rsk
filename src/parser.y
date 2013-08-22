@@ -189,7 +189,8 @@ term     : term '*' factor                { $$ = ir_arg_op(func_new($2), $1, $3,
          | factor
          ;
 
-factor   : INT                            { $$ = ir_arg_word($1, type_int, yylineno); }
+factor   : '(' cmp ')'                    { $$ = $2; }
+         | INT                            { $$ = ir_arg_word($1, type_int, yylineno); }
          | FLOAT                          { $$ = ir_arg_word($1, type_float, yylineno); }
          | ARRAY                          { $$ = ir_arg_data($1.ptr, $1.size, type_array, yylineno); }
          | ID '(' args ')'                { $$ = ir_arg_call(funcs, func_cur, $1, $3, yylineno); }
