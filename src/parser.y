@@ -41,7 +41,7 @@ struct ir_func* func_new(char* name) {
 
 int yyparse ();
 
-static struct ir_func* binary_op(char* name, struct ir_type* arg, struct ir_type* res) {
+static struct ir_func* binary_op(char* name, struct ir_type* res) {
    struct ir_param* a = malloc(sizeof(*a));
    memset(a, 0, sizeof(*a));
    a->name = strdup("a");
@@ -71,42 +71,42 @@ void parse(FILE* in, struct map* f) {
    type_bool = malloc(sizeof(*type_bool));
    type_bool->name = "bool";
    map_init(&type_bool->ops);
-   map_set(&type_bool->ops, "=", 2, binary_op("int=", type_bool, type_bool));
-   map_set(&type_bool->ops, "<", 2, binary_op("int<", type_bool, type_bool));
-   map_set(&type_bool->ops, ">", 2, binary_op("int>", type_bool, type_bool));
+   map_set(&type_bool->ops, "=", 2, binary_op("int=", type_bool));
+   map_set(&type_bool->ops, "<", 2, binary_op("int<", type_bool));
+   map_set(&type_bool->ops, ">", 2, binary_op("int>", type_bool));
    
    
    type_int = malloc(sizeof(*type_int));
    type_int->name = "int";
    map_init(&type_int->ops);
-   map_set(&type_int->ops, "+", 2, binary_op("int+", type_int, type_int));
-   map_set(&type_int->ops, "-", 2, binary_op("int-", type_int, type_int));
-   map_set(&type_int->ops, "*", 2, binary_op("int*", type_int, type_int));
-   map_set(&type_int->ops, "/", 2, binary_op("int/", type_int, type_int));
-   map_set(&type_int->ops, "=", 2, binary_op("int=", type_int, type_bool));
-   map_set(&type_int->ops, "<", 2, binary_op("int<", type_int, type_bool));
-   map_set(&type_int->ops, ">", 2, binary_op("int>", type_int, type_bool));
+   map_set(&type_int->ops, "+", 2, binary_op("int+", type_int));
+   map_set(&type_int->ops, "-", 2, binary_op("int-", type_int));
+   map_set(&type_int->ops, "*", 2, binary_op("int*", type_int));
+   map_set(&type_int->ops, "/", 2, binary_op("int/", type_int));
+   map_set(&type_int->ops, "=", 2, binary_op("int=", type_bool));
+   map_set(&type_int->ops, "<", 2, binary_op("int<", type_bool));
+   map_set(&type_int->ops, ">", 2, binary_op("int>", type_bool));
    
    type_float = malloc(sizeof(*type_float));
    type_float->name = "float";
    map_init(&type_float->ops);
-   map_set(&type_float->ops, "+", 2, binary_op("float+", type_float, type_float));
+   map_set(&type_float->ops, "+", 2, binary_op("float+", type_float));
    
    type_array = malloc(sizeof(*type_array));
    type_array->name = "array";
    map_init(&type_array->ops);
-   map_set(&type_array->ops, "+", 2, binary_op("array+", type_array, type_array));
-   map_set(&type_array->ops, "=", 2, binary_op("array=", type_array, type_bool));
+   map_set(&type_array->ops, "+", 2, binary_op("array+", type_array));
+   map_set(&type_array->ops, "=", 2, binary_op("array=", type_bool));
    
    // setup functions
-   binary_op("+", NULL, NULL);
-   binary_op("-", NULL, NULL);
-   binary_op("*", NULL, NULL);
-   binary_op("/", NULL, NULL);
-   binary_op("=", NULL, NULL);
-   binary_op("<", NULL, NULL);
-   binary_op(">", NULL, NULL);
-   binary_op("mod", NULL, type_int);
+   binary_op("+", NULL);
+   binary_op("-", NULL);
+   binary_op("*", NULL);
+   binary_op("/", NULL);
+   binary_op("=", NULL);
+   binary_op("<", NULL);
+   binary_op(">", NULL);
+   binary_op("mod", type_int);
 
    // parsing
    yyin = in;
