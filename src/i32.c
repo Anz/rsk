@@ -65,7 +65,7 @@ void x86_loadd(buffer_t* text, char* label) {
 void* funcs_ow[][2] = {
    { "int+", "\tadd %%ebx, %%eax\n" },
    { "int-", "\tsub %%ebx, %%eax\n" },
-   { "int*", "\tmul %%ebx, %%eax\n" },
+   { "int*", "\timul %%ebx, %%eax\n" },
    { "int/", "\txor %%edx, %%edx\n\tidiv %%ebx\n" },
    { "int=", "\tsub %%ebx, %%eax\n" },
    { "int<", "\tcall _lt\n" },
