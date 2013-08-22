@@ -74,6 +74,8 @@ void parse(FILE* in, struct map* f) {
    map_set(&type_bool->ops, "=", 2, binary_op("int=", type_bool));
    map_set(&type_bool->ops, "<", 2, binary_op("int<", type_bool));
    map_set(&type_bool->ops, ">", 2, binary_op("int>", type_bool));
+   map_set(&type_bool->ops, "<=", 3, binary_op("int<=", type_bool));
+   map_set(&type_bool->ops, ">=", 3, binary_op("int>=", type_bool));
    
    
    type_int = malloc(sizeof(*type_int));
@@ -86,6 +88,8 @@ void parse(FILE* in, struct map* f) {
    map_set(&type_int->ops, "=", 2, binary_op("int=", type_bool));
    map_set(&type_int->ops, "<", 2, binary_op("int<", type_bool));
    map_set(&type_int->ops, ">", 2, binary_op("int>", type_bool));
+   map_set(&type_int->ops, "<=", 3, binary_op("int<=", type_bool));
+   map_set(&type_int->ops, ">=", 3, binary_op("int>=", type_bool));
    
    type_float = malloc(sizeof(*type_float));
    type_float->name = "float";
@@ -106,6 +110,8 @@ void parse(FILE* in, struct map* f) {
    binary_op("=", NULL);
    binary_op("<", NULL);
    binary_op(">", NULL);
+   binary_op("<=", NULL);
+   binary_op(">=", NULL);
    binary_op("mod", type_int);
 
    // parsing
@@ -165,9 +171,11 @@ case     : case '{' cmp ',' cmp '\n'      { list_add(&func_cur->cases, ir_func_c
          ;
          
 cmp      : cmp '=' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
+         | cmp '<' '=' expr               { $$ = ir_arg_op(func_new("<="), $1, $4, yylineno); }
+         | cmp '>' '=' expr               { $$ = ir_arg_op(func_new(">="), $1, $4, yylineno); }
          | cmp '<' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
          | cmp '>' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
-         | expr
+         | expr 
          ;
          
 

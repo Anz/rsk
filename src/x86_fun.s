@@ -133,6 +133,21 @@ _lt:
          mov   $0, %eax
 _lt_end: ret
 
+_ge:
+         cmp   %eax, %ebx
+         mov   $1, %eax
+         jge    _ge_end
+         mov   $0, %eax
+_ge_end: ret
+
+
+_le:
+         cmp   %eax, %ebx
+         mov   $1, %eax
+         jle    _le_end
+         mov   $0, %eax
+_le_end: ret
+
 mod:
          xor   %edx, %edx
          idiv  %ebx

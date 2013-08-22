@@ -70,6 +70,8 @@ void* funcs_ow[][2] = {
    { "int=", "\tsub %%ebx, %%eax\n" },
    { "int<", "\tcall _lt\n" },
    { "int>", "\tcall _gt\n" },
+   { "int<=", "\tcall _le\n" },
+   { "int>=", "\tcall _ge\n" },
    { "float+", "\tadd %%ebx, %%eax\n" },
    { "array+", "\tcall _concat\n" },
 };

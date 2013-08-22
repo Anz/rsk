@@ -30,7 +30,6 @@ static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg,
             list_add(errors, error);
             return NULL;
          }
-         
          struct list arg_types;
          list_init(&arg_types);
          
@@ -44,10 +43,10 @@ static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg,
          
          
          char* binary_operation[] = {
-            "+", "-", "*", "/", "=", "<", ">"
+            "+", "-", "*", "/", "=", "<=", ">=", "<", ">", ""
          };
          // check if call is on binary function
-         for (int i = 0; i < sizeof(binary_operation) / sizeof(char*); i++) {
+         for (int i = 0; binary_operation[i] != ""; i++) {
             if (strcmp(binary_operation[i], func->name) == 0) {
                struct ir_type* type = list_get(&arg_types, 0);
                if (type == NULL) {
