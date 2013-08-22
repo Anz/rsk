@@ -18,13 +18,13 @@ int max(int a, int b) {
 
 void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count);
 
-void x86_loadp(struct buffer* text, int param) {
-   int index = param*4;
+void x86_loadp(struct buffer* text, int param, int arg_count) {
+   int index;
    
-   if (param <= 4) {
-      index = -index;
+   if (param < 4) {
+      index = -param*4-4;
    } else {
-      index += 4;
+      index = (arg_count-param)*4+4;
    }
    
    switch (argidx) {
@@ -154,7 +154,7 @@ void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int ar
          break;
       }
       case IR_ARG_PARAM: {
-         x86_loadp(text, arg_count - arg->call.param->index);
+         x86_loadp(text, arg->call.param->index, arg_count);
          break;
       }
       case IR_ARG_DATA: {

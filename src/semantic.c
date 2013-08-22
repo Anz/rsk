@@ -134,8 +134,13 @@ struct ir_func* semantic_check(struct map* funcs, struct ir_func* f, struct list
       semantic_arg_check(funcs, c->cond, args, errors);
       struct ir_type* type = semantic_arg_check(funcs, c->func, args, errors);
       
+      if (type == NULL) {
+         printf("cases %i in %s does not have an explicit return type\n", i+1, func_new->name);
+         exit(1);
+      }
+      
       if (type != func_new->type) {
-         printf("cases in %s do not have the same return type\n", func_new->name);
+         printf("cases in %s do not have the same return type (%p != %p)\n", func_new->name, type, func_new->type);
          exit(1);
       }
    }
