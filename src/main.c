@@ -17,12 +17,25 @@
 #include <signal.h>
 #include <execinfo.h>
 
+static const char MSG_USEAGE[] =    "Usage: rev [options] output inputs ...\n"
+                                    "       -a <arch>     architecture\n"
+                                    "       -f <format>   output format\n"
+                                    "       -v            verbose\n";
+
+static const char MSG_VERSION[] =   "rsk 0.01\n"
+                                    "Copyright 2013, rsk\n";
+
 
 extern void parse(FILE*, struct map*);
 extern char* yycode();
 
 void bt_sighandler(int sig, siginfo_t *info,
                    void *secret);
+                   
+void print_and_exit(const char* msg) {
+    puts(msg);
+    exit(EXIT_FAILURE);
+}
 
 
 void print_arg(struct ir_arg* arg) {
@@ -78,12 +91,6 @@ void print_func(struct ir_func* f) {
    printf("\n");
 }
 
-void print_usage() {
-    printf("Usage: rev [options] output files ...\n"
-           "       -i <input>    source file\n"
-           "       -o <ouput>    output binary\n"
-           "       -v            verbose\n");
-}
 
 int main (int argc, char *argv[]) {
    struct sigaction sa;
@@ -97,27 +104,51 @@ int main (int argc, char *argv[]) {
 
    int option = 0;
    FILE* in = NULL;
-   FILE* out = stdout;
-   bool verbose = false;
+   FILE* out = NULL;
+   static int verbose = 0;
+   
+   static struct option long_options[] = {
+      /* flags */
+      {"version", no_argument, 0, 'v'},
+      {"help",    no_argument, 0, 'h'},
+      {"verbose", no_argument, &verbose,  1},
+      /* values */
+      {"arch",    required_argument, 0, 'a'},
+      {"format",  required_argument, 0, 'f'},
+      {0, 0, 0, 0}
+   };
 
    // parse args
-   while ((option = getopt(argc, argv,"i:o:v")) != -1) {
-      switch (option) {
-          case 'i' : in = fopen(optarg, "r");
-              break;
-          case 'o' : out = fopen(optarg, "w");
-              break;
-          case 'v' : verbose = true;
-              break;
-          default: print_usage(); 
-              exit(EXIT_FAILURE);
+   int argi = 0;
+   int optind = 0;
+   while (option != -1) {
+      option = getopt_long(argc, argv, "vha:f:", long_options, &optind);
+      argi++;
+         
+      switch(option) {
+         case 0: printf("flag\n");  break;
+         case 'v': print_and_exit(MSG_VERSION); break;
+         case 'h': print_and_exit(MSG_USEAGE); break;
+         case 'a': argi++; printf("arch not yet supported\n"); break;
+         case 'f': argi++; printf("format not yet supported\n"); break;
+         case '?': printf("unknown\n"); break;
+         default: break;
       }
    }
    
+   // at least two files
+   if (argi+1 >= argc) {
+      print_and_exit(MSG_USEAGE);
+   }
+   
+   out = fopen(argv[argi++], "w");
+   in = fopen(argv[argi++], "r");
+
+   
+   
    // print usage
-   if (in == NULL) {
-      print_usage();
-      return 0;
+   if (out == NULL || in == NULL) {
+      print_and_exit(MSG_USEAGE);
    }
    
    // error list

@@ -20,4 +20,4 @@ itoa(x,b) =  { itoa(x / b, b) + itoa(mod(x, b), b), x > b
           
          
 
-main = '0x' + itoa(1337, 16) + '\n'   
+main = itoa(1337, 2) + '\n'   
