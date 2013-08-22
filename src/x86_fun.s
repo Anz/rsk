@@ -55,12 +55,15 @@ _memcpy:
          mov   %eax, %esi
          mov   %ebx, %edi
          mov   %ecx, %eax
-_memcpy_1:
+         cmp   $0, %eax
+         jle    _memcpy_end
+_memcpy_loop:
          movsb
          dec   %eax
          cmp   $0, %eax
-         jg    _memcpy_1
+         jg    _memcpy_loop
          mov   %ebx, %eax
+_memcpy_end:     
          mov   %ebp, %esp
          pop   %ebp
          ret
@@ -73,8 +76,9 @@ _concat:
          push %ebx
          
          # alloc memory
-         movl   (%eax), %eax # calculate new length
-         addl   (%ebx), %eax
+         addl  (%eax), %eax # calculate new length
+         addl  (%ebx), %eax
+         addl   $4, %eax
          call  _malloc
          push  %eax
          

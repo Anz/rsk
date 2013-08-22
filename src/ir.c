@@ -203,17 +203,6 @@ struct list ir_cases_cpy(struct ir_func* f, struct list cases) {
    return cpy;
 }
 
-// RESOLVING
-/*struct ir_type* ir_arg_type(struct ir_arg* arg) {
-   switch (arg->arg_type) {
-      case IR_ARG_DATA: return arg->data.type;
-      case IR_ARG_PARAM: return arg->call.param->type;
-      case IR_ARG_CALL: return arg->call.func->type;
-   }
-   
-   return NULL;
-}*/
-
 // ERROR
 void ir_print_err(struct ir_error err) {
    struct ir_func* call;

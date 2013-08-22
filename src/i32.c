@@ -158,7 +158,7 @@ void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int ar
          break;
       }
       case IR_ARG_DATA: {
-         if (arg->data.size == 4) {
+         if (strcmp(arg->data.type->name, "array") != 0) {
             x86_loadv(text, arg->data.word);
          } else {
             char name[512];
