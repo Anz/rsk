@@ -340,9 +340,6 @@ void yyfree (void *  );
 
 /* Begin user sect3 */
 
-#define yywrap(n) 1
-#define YY_SKIP_YYWRAP
-
 typedef unsigned char YY_CHAR;
 
 FILE *yyin = (FILE *) 0, *yyout = (FILE *) 0;
@@ -476,13 +473,15 @@ int yy_flex_debug = 0;
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
 #line 1 "src/scanner.l"
-#line 4 "src/scanner.l"
+#line 2 "src/scanner.l"
 
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include "parser.h"
+
+extern void yyterminate();
 
 char* sc_string(char* str) {
    /*int len = strlen(s);
@@ -522,7 +521,7 @@ char* sc_string(char* str) {
    return data;
 }
 
-#line 526 "<stdout>"
+#line 525 "<stdout>"
 
 #define INITIAL 0
 
@@ -712,7 +711,7 @@ YY_DECL
 #line 58 "src/scanner.l"
 
 
-#line 716 "<stdout>"
+#line 715 "<stdout>"
 
 	if ( !(yy_init) )
 		{
@@ -842,7 +841,7 @@ YY_RULE_SETUP
 #line 69 "src/scanner.l"
 ECHO;
 	YY_BREAK
-#line 846 "<stdout>"
+#line 845 "<stdout>"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

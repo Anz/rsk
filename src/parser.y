@@ -14,6 +14,8 @@ extern FILE * yyin;
 extern int yylex();
 extern int yylineno;
 
+struct list* ins = NULL;
+
 struct map* funcs = NULL;
 
 struct ir_func* func_cur = NULL;
@@ -60,12 +62,11 @@ static struct ir_func* binary_op(char* name, struct ir_type* res) {
    return f;
 }
 
-void parse(FILE* in, struct map* f) {
+void parse(struct list* inputs, struct map* f) {
+   ins = inputs;
+
    // init structures
    funcs = f;
-   
-   
-   
 
    // setup types
    type_bool = malloc(sizeof(*type_bool));
@@ -115,8 +116,17 @@ void parse(FILE* in, struct map* f) {
    binary_op("mod", type_int);
 
    // parsing
-   yyin = in;
+   yyin = (FILE*)list_pop(ins);
    yyparse();
+}
+
+int yywrap() {
+   fclose(yyin);
+   yyin = (FILE*)list_pop(ins);
+   if (yyin == NULL) {
+      return 1;
+   }
+   return 0;
 }
 
 %}

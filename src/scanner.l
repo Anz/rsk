@@ -1,5 +1,3 @@
-%option noyywrap
-
 %{
 
 
@@ -7,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "parser.h"
+
+extern void yyterminate();
 
 char* sc_string(char* str) {
    /*int len = strlen(s);

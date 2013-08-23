@@ -26,5 +26,7 @@ void* list_remove(struct list* l, int index);
 void* list_remove_item(struct list* l, void* data);
 list_it* list_iterator(struct list* l);
 list_it* list_next(list_it* it);
+void* list_pop(struct list* l);
+
 
 #endif

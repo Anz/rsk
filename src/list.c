@@ -74,13 +74,17 @@ void* list_remove(struct list* l, int index) {
    if (index == 0) {
       item = l->first;
       l->first = item->next;
-      l->first->prev = NULL;
+      if (l->first != NULL) {
+         l->first->prev = NULL;
+      }
    } 
    
    if (index == l->size - 1) {
       item = l->last;
       l->last = item->prev;
-      l->last->next = NULL;
+      if (l->last != NULL) {
+         l->last->next = NULL;
+      }
    }
    
    if (item == NULL) {
@@ -122,3 +126,6 @@ list_it* list_next(list_it* it) {
    return it->next;
 }
 
+void* list_pop(struct list* l) {
+   return list_remove(l,0);
+}

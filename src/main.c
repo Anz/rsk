@@ -26,7 +26,7 @@ static const char MSG_VERSION[] =   "rsk 0.01\n"
                                     "Copyright 2013, rsk\n";
 
 
-extern void parse(FILE*, struct map*);
+extern void parse(struct list* inputs, struct map*);
 extern char* yycode();
 
 void bt_sighandler(int sig, siginfo_t *info,
@@ -103,7 +103,6 @@ int main (int argc, char *argv[]) {
   sigaction(SIGUSR1, &sa, NULL);
 
    int option = 0;
-   FILE* in = NULL;
    FILE* out = NULL;
    static int verbose = 0;
    
@@ -142,12 +141,21 @@ int main (int argc, char *argv[]) {
    }
    
    out = fopen(argv[argi++], "w");
-   in = fopen(argv[argi++], "r");
+   struct list ins;
+   list_init(&ins);
+   for (; argi < argc; argi++) {
+      FILE* in = fopen(argv[argi], "r");
+      if (in == NULL) {
+         printf("could not open file %s", argv[argi]);
+         exit(1);
+      }
+      list_add(&ins, in);
+   }
 
    
    
    // print usage
-   if (out == NULL || in == NULL) {
+   if (out == NULL) {
       print_and_exit(MSG_USEAGE);
    }
    
@@ -160,9 +168,8 @@ int main (int argc, char *argv[]) {
    map_init(&funcs);
    
    // compile into intermediate representation
-   parse(in, &funcs);
-   fclose(in);
-   
+   parse(&ins, &funcs);
+
    struct list args;
    list_init(&args);
    
