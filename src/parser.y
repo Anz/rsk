@@ -158,14 +158,13 @@ int yywrap() {
 %%
          
 line     : line def
-         | line '\n'
          | def
-         | '\n'
          ;
 
 def      : var '(' param ')' '=' case
          | var '(' param ')' '=' cmp '\n' { list_add(&$1->cases, ir_func_case(NULL, $6, yylineno)); }
          | var '=' cmp '\n'               { list_add(&$1->cases, ir_func_case(NULL, $3, yylineno)); }
+         | '\n'
          ;
             
 var      : ID                             { $$ = func_cur = func_new($1); $$->lineno = yylineno; map_set(funcs, $$->name, strlen($$->name) + 1, $$); }
@@ -177,6 +176,7 @@ param    : param ',' ID                   { ir_func_param(func_cur, $3, yylineno
       
 case     : case '{' cmp ',' cmp '\n'      { list_add(&func_cur->cases, ir_func_case($5, $3, yylineno)); }
          | '{' cmp ',' cmp '\n'           { list_add(&func_cur->cases, ir_func_case($4, $2, yylineno)); }
+         | '{' cmp '\n'                   { list_add(&func_cur->cases, ir_func_case(NULL, $2, yylineno)); }
          ;
          
 cmp      : cmp '=' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
