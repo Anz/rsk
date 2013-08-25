@@ -29,7 +29,3 @@ itoa(x,b) =  { itoa(x / b, b) + itoa(mod(x, b), b), x >= b
              { 'd', x = 13
              { 'e', x = 14
              { 'f', x = 15
-          
-         
-
-main = itoa(6015, HEX) + '\n'

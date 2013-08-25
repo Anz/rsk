@@ -113,7 +113,6 @@ void parse(struct list* inputs, struct map* f) {
    binary_op(">", NULL);
    binary_op("<=", NULL);
    binary_op(">=", NULL);
-   binary_op("mod", type_int);
 
    // parsing
    yyin = (FILE*)list_pop(ins);

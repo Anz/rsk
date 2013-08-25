@@ -148,10 +148,4 @@ _le:
          mov   $0, %eax
 _le_end: ret
 
-mod:
-         xor   %edx, %edx
-         idiv  %ebx
-         mov   %edx, %eax
-         ret
-
          
