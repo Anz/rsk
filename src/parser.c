@@ -183,7 +183,7 @@ void parse(struct list* inputs, struct map* f) {
    func_prototype(">", 2, NULL);
    func_prototype("<=", 2, NULL);
    func_prototype(">=", 2, NULL);
-   func_prototype("read", 1, type_array);
+   func_prototype("stdin", 1, type_array);
 
    // parsing
    yyin = (FILE*)list_pop(ins);
