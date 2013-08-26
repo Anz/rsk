@@ -43,21 +43,20 @@ struct ir_func* func_new(char* name) {
 
 int yyparse ();
 
-static struct ir_func* binary_op(char* name, struct ir_type* res) {
-   struct ir_param* a = malloc(sizeof(*a));
-   memset(a, 0, sizeof(*a));
-   a->name = strdup("a");
-   
-   struct ir_param* b = malloc(sizeof(*b));
-   memset(b, 0, sizeof(*b));
-   b->name = strdup("b");
-   
-   
+static struct ir_func* func_prototype(char* name, int args, struct ir_type* res) {   
    // setup functions
    struct ir_func* f = func_new(name);
    f->type = res;
-   map_set(&f->params, a->name, strlen(a->name)+1, a);
-   map_set(&f->params, b->name, strlen(b->name)+1, b);
+   
+   for (int i = 0; i < args; i++) {
+      struct ir_param* param = malloc(sizeof(*param));
+      memset(param, 0, sizeof(*param));
+      char buf[100];
+      sprintf(buf, "arg%i", i);
+      param->name = strdup(buf);
+      
+      map_set(&f->params, param->name, strlen(param->name)+1, param);
+   }
    
    return f;
 }
@@ -72,47 +71,50 @@ void parse(struct list* inputs, struct map* f) {
    type_bool = malloc(sizeof(*type_bool));
    type_bool->name = "bool";
    map_init(&type_bool->ops);
-   map_set(&type_bool->ops, "=", 2, binary_op("int=", type_bool));
-   map_set(&type_bool->ops, "<", 2, binary_op("int<", type_bool));
-   map_set(&type_bool->ops, ">", 2, binary_op("int>", type_bool));
-   map_set(&type_bool->ops, "<=", 3, binary_op("int<=", type_bool));
-   map_set(&type_bool->ops, ">=", 3, binary_op("int>=", type_bool));
+   map_set(&type_bool->ops, "=", 2, func_prototype("int=", 2, type_bool));
+   map_set(&type_bool->ops, "<", 2, func_prototype("int<", 2, type_bool));
+   map_set(&type_bool->ops, ">", 2, func_prototype("int>", 2, type_bool));
+   map_set(&type_bool->ops, "<=", 3, func_prototype("int<=", 2, type_bool));
+   map_set(&type_bool->ops, ">=", 3, func_prototype("int>=", 2, type_bool));
    
    
    type_int = malloc(sizeof(*type_int));
    type_int->name = "int";
    map_init(&type_int->ops);
-   map_set(&type_int->ops, "+", 2, binary_op("int+", type_int));
-   map_set(&type_int->ops, "-", 2, binary_op("int-", type_int));
-   map_set(&type_int->ops, "*", 2, binary_op("int*", type_int));
-   map_set(&type_int->ops, "/", 2, binary_op("int/", type_int));
-   map_set(&type_int->ops, "=", 2, binary_op("int=", type_bool));
-   map_set(&type_int->ops, "<", 2, binary_op("int<", type_bool));
-   map_set(&type_int->ops, ">", 2, binary_op("int>", type_bool));
-   map_set(&type_int->ops, "<=", 3, binary_op("int<=", type_bool));
-   map_set(&type_int->ops, ">=", 3, binary_op("int>=", type_bool));
+   map_set(&type_int->ops, "+", 2, func_prototype("int+", 2, type_int));
+   map_set(&type_int->ops, "-", 2, func_prototype("int-", 2, type_int));
+   map_set(&type_int->ops, "*", 2, func_prototype("int*", 2, type_int));
+   map_set(&type_int->ops, "/", 2, func_prototype("int/", 2, type_int));
+   map_set(&type_int->ops, "=", 2, func_prototype("int=", 2, type_bool));
+   map_set(&type_int->ops, "<", 2, func_prototype("int<", 2, type_bool));
+   map_set(&type_int->ops, ">", 2, func_prototype("int>", 2, type_bool));
+   map_set(&type_int->ops, "<=", 3, func_prototype("int<=", 2, type_bool));
+   map_set(&type_int->ops, ">=", 3, func_prototype("int>=", 2, type_bool));
    
    type_float = malloc(sizeof(*type_float));
    type_float->name = "float";
    map_init(&type_float->ops);
-   map_set(&type_float->ops, "+", 2, binary_op("float+", type_float));
+   map_set(&type_float->ops, "+", 2, func_prototype("float+", 2, type_float));
    
    type_array = malloc(sizeof(*type_array));
    type_array->name = "array";
    map_init(&type_array->ops);
-   map_set(&type_array->ops, "+", 2, binary_op("array+", type_array));
-   map_set(&type_array->ops, "=", 2, binary_op("array=", type_bool));
+   map_set(&type_array->ops, "+", 2, func_prototype("array+", 2, type_array));
+   map_set(&type_array->ops, "=", 2, func_prototype("array=", 2, type_bool));
+   map_set(&type_array->ops, "!=", 3, func_prototype("array!=", 2, type_bool));
    
    // setup functions
-   binary_op("+", NULL);
-   binary_op("-", NULL);
-   binary_op("*", NULL);
-   binary_op("/", NULL);
-   binary_op("=", NULL);
-   binary_op("<", NULL);
-   binary_op(">", NULL);
-   binary_op("<=", NULL);
-   binary_op(">=", NULL);
+   func_prototype("+", 2, NULL);
+   func_prototype("-", 2, NULL);
+   func_prototype("*", 2, NULL);
+   func_prototype("/", 2, NULL);
+   func_prototype("=", 2, NULL);
+   func_prototype("!=", 2, NULL);
+   func_prototype("<", 2, NULL);
+   func_prototype(">", 2, NULL);
+   func_prototype("<=", 2, NULL);
+   func_prototype(">=", 2, NULL);
+   func_prototype("read", 1, type_array);
 
    // parsing
    yyin = (FILE*)list_pop(ins);
@@ -180,6 +182,7 @@ case     : case '{' cmp ',' cmp '\n'      { list_add(&func_cur->cases, ir_func_c
          ;
          
 cmp      : cmp '=' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }
+         | cmp '!' '=' expr               { $$ = ir_arg_op(func_new("!="), $1, $4, yylineno); }
          | cmp '<' '=' expr               { $$ = ir_arg_op(func_new("<="), $1, $4, yylineno); }
          | cmp '>' '=' expr               { $$ = ir_arg_op(func_new(">="), $1, $4, yylineno); }
          | cmp '<' expr                   { $$ = ir_arg_op(func_new($2), $1, $3, yylineno); }

@@ -74,6 +74,8 @@ void* funcs_ow[][2] = {
    { "int>=", "\tcall _ge\n" },
    { "float+", "\tadd %%ebx, %%eax\n" },
    { "array+", "\tcall _concat\n" },
+   { "array=", "\tcall _memcmp\n" },
+   { "array!=", "\tcall _memcmp\n\tadd $-1, %%eax\n" },
 };
 
 void x86_save_reg(buffer_t* text, int args) {
@@ -104,22 +106,32 @@ void x86_call(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count)
  
    struct ir_func* func = arg->call.func;
    struct ir_arg* left_op = list_get(&arg->call.args, 0);
-   
-   for (int i = 0; i < arg->call.args.size; i++) {
-      struct ir_arg* a =  (struct ir_arg*) list_get(&arg->call.args, i);
-      x86_func_compile(text, data, a, arg_count);
-   }
 
-   // native function overwrite
+   // binary operation overwrite
    for (int i = 0; i < sizeof(funcs_ow) / sizeof(funcs_ow[0]); i++) {
       char* name = (char*)funcs_ow[i][0];
       char* value = (char*)funcs_ow[i][1];
       if (strcmp(name, func->name) == 0) {
-         buffer_writes(text, value);
+         if (strcmp("array+", func->name) == 0) {
+            x86_func_compile(text, data, (struct ir_arg*) list_get(&arg->call.args, 0), arg_count);
+            buffer_writes(text, "\tcall _print\n");
+            argidx--;
+            x86_func_compile(text, data, (struct ir_arg*) list_get(&arg->call.args, 1), arg_count);
+         } else {
+            x86_func_compile(text, data, (struct ir_arg*) list_get(&arg->call.args, 0), arg_count);
+            x86_func_compile(text, data, (struct ir_arg*) list_get(&arg->call.args, 1), arg_count);
+            buffer_writes(text, value);
+         }
+         
          x86_restore_reg(text, tmpargidx);
          argidx = tmpargidx + 1;
          return;
       }
+   }
+   
+   for (int i = 0; i < arg->call.args.size; i++) {
+      struct ir_arg* a =  (struct ir_arg*) list_get(&arg->call.args, i);
+      x86_func_compile(text, data, a, arg_count);
    }
    
    // generic function

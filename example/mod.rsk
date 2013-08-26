@@ -8,4 +8,4 @@
 // mod(6, 3) = 0
 
 mod(x,y) = { mod(x - y, y), x > y
-           { x
+           { x, 0

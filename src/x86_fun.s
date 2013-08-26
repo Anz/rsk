@@ -4,11 +4,26 @@
 _start:
         call   main
         call   _print
-        add    $4, %esp
         
         mov    $0x0,%ebx
         mov    $0x1,%eax
         int    $0x80
+        
+read:
+         mov   $105, %eax    # 5 bytes
+         call  _malloc     # alloc memory
+         add   $4, %eax    # skip first 4 byte
+         
+         mov   %eax, %ecx  # store in string
+         mov   $3, %eax    # read syscall
+         mov   $0, %ebx    # from stdin
+         mov   $100, %edx    # 1 byte
+         int   $0x80
+
+         sub   $4, %ecx
+         mov   %eax, (%ecx)
+         mov   %ecx, %eax
+         ret
 
 _print:
          push %ebp
@@ -67,6 +82,46 @@ _memcpy_end:
          mov   %ebp, %esp
          pop   %ebp
          ret
+
+_memcmp:
+         mov   %eax, %esi
+         mov   %ebx, %edi
+         movl  (%esi), %eax
+         movl  (%edi), %ebx
+         cmp   %eax, %ebx
+         jne   _memcmp_false
+         mov   %eax, %ecx
+         add   $4, %esi
+         add   $4, %edi
+_memcmp_loop:
+         cmp   $1, %ecx
+         je    _memcmp_true  
+         movb  (%esi), %al
+         movb  (%edi), %bl
+         cmp   %al, %bl
+         jne   _memcmp_false
+         inc   %esi
+         inc   %edi
+         dec   %ecx
+         jmp   _memcmp_loop
+_memcmp_true:
+         mov $0, %eax
+         ret
+_memcmp_false:
+         mov $1, %eax
+         ret
+         
+_concat2:
+         push  %ebp
+         mov   %esp, %ebp
+
+         push  %ebx
+         call  _print
+         pop   %eax
+         
+         mov %ebp, %esp
+         pop %ebp
+         ret   
          
 _concat:
          push  %ebp

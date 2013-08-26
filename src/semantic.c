@@ -43,7 +43,7 @@ static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg,
          
          
          char* binary_operation[] = {
-            "+", "-", "*", "/", "=", "<=", ">=", "<", ">", ""
+            "+", "-", "*", "/", "=", "!=", "<=", ">=", "<", ">", ""
          };
          // check if call is on binary function
          for (int i = 0; binary_operation[i] != ""; i++) {
