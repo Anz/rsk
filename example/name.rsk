@@ -2,4 +2,4 @@
              
 ask(x) = '\nThat is it! Your name is ' + x
 
-main = 'Hello... excuse me, what is your name again?\nName: ' + ask(read(0))
+main = 'Hello... excuse me, what is your name again?\nName: ' + ask(stdin(0))

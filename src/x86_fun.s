@@ -9,7 +9,7 @@ _start:
         mov    $0x1,%eax
         int    $0x80
         
-read:
+stdin:
          mov   $105, %eax    # 5 bytes
          call  _malloc     # alloc memory
          add   $4, %eax    # skip first 4 byte
