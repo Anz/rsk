@@ -173,30 +173,4 @@ _concat:
          pop %ebp
          ret
 
-_lt:
-         sub   %ebx, %eax
-         shr   $31, %eax
-         add   $-1, %eax
-         ret
-
-
-_gt:
-         sub   %eax, %ebx
-         shr   $31, %ebx
-         mov   %ebx, %eax
-         add   $-1, %eax
-         ret
-
-_le:
-         sub   %eax, %ebx
-         shr   $31, %ebx
-         mov   %ebx, %eax
-         ret
-
-
-_ge:
-         sub   %ebx, %eax
-         shr   $31, %eax
-         ret
-
          
