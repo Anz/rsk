@@ -12,7 +12,7 @@ DEC = 10
 HEX = 16
 BIN = 2
 
-itoa(x,b) =  { itoa(x / b, b) + itoa(mod(x, b), b), x > b - 1
+itoa(x,b) =  { itoa(x / b, b) + itoa(mod(x, b), b), x >= b
              { '0', x = 0
              { '1', x = 1
              { '2', x = 2

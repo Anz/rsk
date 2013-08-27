@@ -173,34 +173,30 @@ _concat:
          pop %ebp
          ret
 
-_gt:
-         cmp   %eax, %ebx
-         mov   $1, %eax
-         jg    _gt_end
-         mov   $0, %eax
-_gt_end: ret
-
-
 _lt:
-         cmp   %eax, %ebx
-         mov   $1, %eax
-         jl    _lt_end
-         mov   $0, %eax
-_lt_end: ret
+         sub   %ebx, %eax
+         shr   $31, %eax
+         add   $-1, %eax
+         ret
 
-_ge:
-         cmp   %eax, %ebx
-         mov   $1, %eax
-         jge    _ge_end
-         mov   $0, %eax
-_ge_end: ret
 
+_gt:
+         sub   %eax, %ebx
+         shr   $31, %ebx
+         mov   %ebx, %eax
+         add   $-1, %eax
+         ret
 
 _le:
-         cmp   %eax, %ebx
-         mov   $1, %eax
-         jle    _le_end
-         mov   $0, %eax
-_le_end: ret
+         sub   %eax, %ebx
+         shr   $31, %ebx
+         mov   %ebx, %eax
+         ret
+
+
+_ge:
+         sub   %ebx, %eax
+         shr   $31, %eax
+         ret
 
          
