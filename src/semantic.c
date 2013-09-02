@@ -1,148 +1,93 @@
 #include "semantic.h"
+#include "map.h"
 #include <stdio.h>
 
-static void concat(char* dst, char delimitor, int n, char* strs[]) {
-   for (int i = 0; i <n; i++) {
-      char* str = strs[i];
-      strcpy(dst, str);
-      if (i < n - 1) {
-         dst += strlen(str);
-         *(dst++) = delimitor;
-      }
+static struct semantic_type semantic_func_check(struct ir_func* func, map_t* infos);
+static struct semantic_type semantic_arg_check(struct ir_arg* arg, map_t* infos);
+static struct info* info_create(struct ir_arg* arg, map_t* infos);
+
+void semantic_check(struct map* funcs, map_t* infos) {
+   // iterate over all funcs
+   for (map_it* it = map_iterator(funcs); it != NULL; it = it->next) {
+      semantic_func_check(it->data, infos);
    }
 }
 
-static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg, struct list args, struct list* errors) {   
-   if (arg == NULL) {
-      return NULL;
+static struct semantic_type semantic_func_check(struct ir_func* func, map_t* infos) {
+   if (list_size(&func->cases) == 0) {
+      struct semantic_type type;
+      memset(&type, 0, sizeof(type));
+      type.param = 0;
+      return type;
    }
+   
+   struct info* info = map_get(infos, func->name, strlen(func->name) + 1);
+   if (info != NULL) {
+      return info->type;
+   }
+   
 
-   switch (arg->arg_type) {
-      case IR_ARG_DATA: return arg->data.type;
-      case IR_ARG_PARAM: return list_get(&args, arg->call.param->index);
-      case IR_ARG_CALL: {
-         if (arg->call.args.size != arg->call.func->params.l.size) {
-            struct ir_error* error = malloc(sizeof(*error));
-            memset(error, 0, sizeof(*error));
-            error->code = IR_ERR_NR_ARGS;
-            error->arg = arg;
-            error->lineno = arg->lineno;
-            list_add(errors, error);
-            return NULL;
-         }
-         struct list arg_types;
-         list_init(&arg_types);
-         
-         for (int i = 0; i < arg->call.args.size; i++) {
-            struct ir_arg* a = (struct ir_arg*) list_get(&arg->call.args, i);
-            
-            list_add(&arg_types, semantic_arg_check(funcs, a, args, errors));
-         }
-         
-         struct ir_func* func = arg->call.func;
-         
-         
-         char* binary_operation[] = {
-            "+", "-", "*", "/", "=", "!=", "<=", ">=", "<", ">", ""
-         };
-         // check if call is on binary function
-         for (int i = 0; binary_operation[i] != ""; i++) {
-            if (strcmp(binary_operation[i], func->name) == 0) {
-               struct ir_type* type = list_get(&arg_types, 0);
-               if (type == NULL) {
-                  return NULL;
-               }
-               arg->call.func = map_get(&type->ops, func->name, strlen(func->name)+1);
-               return type;
-            }
-         }
-         
-         arg->call.func = semantic_check(funcs, arg->call.func, arg_types, errors);
-         return arg->call.func->type;
-      }
-   }
-}
-
-struct ir_func* semantic_check(struct map* funcs, struct ir_func* f, struct list args, struct list* errors) {
-   {
-      struct ir_func* found = map_get(funcs, f->name, strlen(f->name)+1);
-      if (found == NULL) {
-         printf("function not found %s\n", f->name);
-         exit(1);
-      }
-   }
-
-   if (list_size(&f->cases) == 0) {
-      return f;
-   }
+   // function information
+   info = malloc(sizeof(*info));
+   memset(info, 0, sizeof(*info));
+   info->func = func;
+   map_set(infos, func->name, strlen(func->name)+1, info);
    
-   int num = list_size(&args);
-   
-   char* strs[num+1];
-   strs[0] = f->name;
-   for (int i = 0; i < num; i++) {
-      struct ir_type* type = list_get(&args, i);
-      strs[i+1] = type->name;
-   }
-   
-   char* name = malloc(512);
-   concat(name, '_', num+1, strs);
-   
-   struct ir_func* func_new = NULL;
-   
-   
-   func_new = map_get(funcs, name, strlen(name)+1);
-   if (func_new != NULL) {
-      if ( (num == 0 && func_new->type != NULL) || (num > 0) ) {
-         return func_new;
-      }
-   } else {  
-      func_new = ir_func_cpy(f);
-      func_new->ref = 1;
-      f->ref--;
-      func_new->name = name;
-      map_set(funcs, name, strlen(name)+1, func_new);
-   }
+   struct ir_case* c = list_get(&func->cases, 0);
+   info->type = semantic_arg_check(c->func, infos);
    
    int j;
-   for (int i = 0; i < list_size(&func_new->cases); i++) {
-      struct ir_case* c = list_get(&func_new->cases, i);
-       
-      semantic_arg_check(funcs, c->cond, args, errors);
-      struct ir_type* type = semantic_arg_check(funcs, c->func, args, errors);
+   for (int i = 0; i < list_size(&func->cases); i++) {
+      struct ir_case* c = list_get(&func->cases, i);
       
-      if (type != NULL) {
+      info->type = semantic_arg_check(c->func, infos);
+      
+      if (info->type.type != NULL || info->type.param >= 0) {
          j = i;
-         func_new->type = type;
          break;
       }
    }
    
    
-   if (func_new->type == NULL) {
-      printf("infinity loop in %s\n", f->name);
-      exit(1);
+   if (info->type.type != NULL || info->type.param >= 0) {
+      //printf("infinity loop in %s\n", func->name);
    }
    
-   for (int i = 0; i < list_size(&func_new->cases); i++) {
+   for (int i = 0; i < list_size(&func->cases); i++) {
       if (j == i) {
          continue;
       }
-      struct ir_case* c = list_get(&func_new->cases, i);
+      struct ir_case* c = list_get(&func->cases, i);
       
-      semantic_arg_check(funcs, c->cond, args, errors);
-      struct ir_type* type = semantic_arg_check(funcs, c->func, args, errors);
+      semantic_arg_check(c->cond, infos);
+      struct semantic_type type = semantic_arg_check(c->func, infos);
       
-      if (type == NULL) {
-         printf("cases %i in %s does not have an explicit return type\n", i+1, func_new->name);
-         exit(1);
-      }
-      
-      if (type != func_new->type) {
-         printf("cases in %s do not have the same return type (%p != %p)\n", func_new->name, type, func_new->type);
-         exit(1);
+      if (info->type.type != type.type || info->type.param != type.param) {
+         //printf("cases in %s do not have the same return type\n", func->name);
       }
    }
    
-   return func_new;
+   if (info->type.type == NULL && info->type.param < 0) {
+      //printf("type error\n");
+   }
+   
+   return info->type;
+}
+
+static struct semantic_type semantic_arg_check(struct ir_arg* arg, map_t* infos) {
+   struct semantic_type type;
+   memset(&type, 0, sizeof(type));
+
+   switch (arg->arg_type) {
+      case IR_ARG_DATA: 
+         type.type = arg->data.type;
+         return type;
+         
+      case IR_ARG_PARAM:
+         type.param = arg->call.param->index;
+         return type;
+         
+      case IR_ARG_CALL:
+         return semantic_func_check(arg->call.func, infos);
+   }
 }

@@ -87,9 +87,6 @@ void ir_params_cpy(struct ir_func* f, struct map params);
 struct ir_arg* ir_arg_cpy(struct ir_func* f, struct ir_arg* a);
 struct list ir_cases_cpy(struct ir_func* f, struct list cases);
 
-// resolving
-//struct ir_type* ir_arg_type(struct ir_arg* arg);
-
 // error function
 void ir_print_err(struct ir_error err);
 

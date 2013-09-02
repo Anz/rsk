@@ -12,9 +12,9 @@ struct map_entry {
    struct map_entry* next;
 };
 
-struct map {
+typedef struct map {
  struct list l;
-};
+} map_t;
 
 typedef struct map_entry map_it;
 

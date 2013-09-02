@@ -1,10 +1,9 @@
 #include "map.h"
-//#include "elf.h"
 #include "ir.h"
-//#include "x86.h"
-#include "i32.h"
 #include "parser.h"
 #include "semantic.h"
+#include "opt.h"
+#include "i32.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -159,21 +158,29 @@ int main (int argc, char *argv[]) {
       print_and_exit(MSG_USEAGE);
    }
    
-   // error list
-   struct list errors;
-   list_init(&errors);
-   
    // function map
    struct map funcs;
    map_init(&funcs);
    
    // compile into intermediate representation
    parse(&ins, &funcs);
-
+   
+   map_t info;
+   map_init(&info);
+   
+   semantic_check(&funcs, &info);
+   
+   map_clear(&info);
+   
    struct list args;
    list_init(&args);
    
-   semantic_check(&funcs, map_get(&funcs, "main", 5), args, &errors);
+   // error list
+   struct list errors;
+   list_init(&errors);
+   
+   optimize(&funcs, map_get(&funcs, "main", 5), args, &errors);
+   
    for (map_it* it = map_iterator(&funcs); it != NULL; it = it->next) {
       struct ir_func* f = it->data;
       if (f->type == NULL) {

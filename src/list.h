@@ -9,11 +9,11 @@ struct list_item {
    struct list_item* next;
 };
 
-struct list {
+typedef struct list {
    struct list_item* first;
    struct list_item* last;
    size_t size;
-};
+} list_t;
 
 typedef struct list_item list_it;
 
