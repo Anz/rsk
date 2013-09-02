@@ -233,8 +233,11 @@ void ir_print_err(struct ir_error err) {
       case IR_ERR_NR_ARGS: 
          fprintf(stderr, "calling %s with %i arguments, function requires %i\n", call->name, args.size, call->params.l.size);
          break;
-      case IR_ERR_RET_TYPE:
+      case IR_ERR_RET_TYPE_UN:
          fprintf(stderr, "return type of '%s' is unknown\n",  err.func->name);
+         break;
+      case IR_ERR_RET_TYPE_NE:
+         fprintf(stderr, "return type of '%s' is not equal in all cases\n",  err.func->name);
          break;
    }
 }

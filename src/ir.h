@@ -6,9 +6,10 @@
 #define IR_ARG_DATA  0x3
 
 // error definitions
-#define IR_ERR_BIN_OP_NE 0x1 // binary operands are not of the same type
-#define IR_ERR_NR_ARGS   0x2 // number of arguments wrong (too few/much) 
-#define IR_ERR_RET_TYPE  0x3 // unknown return type
+#define IR_ERR_BIN_OP_NE   0x1 // binary operands are not of the same type
+#define IR_ERR_NR_ARGS     0x2 // number of arguments wrong (too few/much) 
+#define IR_ERR_RET_TYPE_UN 0x3 // unknown return type
+#define IR_ERR_RET_TYPE_NE 0x4 // return type not equal in all cases
 
 // error levels
 #define IR_LVL_SOURCE   0x01

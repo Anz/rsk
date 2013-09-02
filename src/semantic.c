@@ -56,7 +56,7 @@ static struct semantic_type semantic_func_check(struct ir_func* func, map_t* inf
       info->error.level = IR_LVL_SUBSEQ;
       return info->type;
    } else if (info->type.type == NULL && info->type.param <= 0) {
-      info->error.code = IR_ERR_RET_TYPE;
+      info->error.code = IR_ERR_RET_TYPE_UN;
       info->error.func = func;
       info->error.file = func->file;
       info->error.lineno = func->lineno;
@@ -75,7 +75,13 @@ static struct semantic_type semantic_func_check(struct ir_func* func, map_t* inf
       struct semantic_type type = semantic_arg_check(c->func, infos);
       
       if (info->type.type != type.type || info->type.param != type.param) {
-         //printf("cases in %s do not have the same return type\n", func->name);
+         info->error.code = IR_ERR_RET_TYPE_NE;
+         info->error.func = func;
+         info->error.file = func->file;
+         info->error.lineno = func->lineno;
+         info->error.level = IR_LVL_SOURCE;
+         info->type.error = info->error;
+         return info->type;
       }
    }
    

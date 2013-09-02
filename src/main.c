@@ -169,6 +169,7 @@ int main (int argc, char *argv[]) {
    }
    
    if (has_errors) {
+      fflush(stderr);
       return 1;
    }
    
