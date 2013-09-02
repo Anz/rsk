@@ -12,7 +12,7 @@ static void concat(char* dst, char delimitor, int n, char* strs[]) {
    }
 }
 
-static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg, struct list args, struct list* errors) {   
+static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg, struct list args) {   
    if (arg == NULL) {
       return NULL;
    }
@@ -22,13 +22,8 @@ static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg,
       case IR_ARG_PARAM: return list_get(&args, arg->call.param->index);
       case IR_ARG_CALL: {
          if (arg->call.args.size != arg->call.func->params.l.size) {
-            struct ir_error* error = malloc(sizeof(*error));
-            memset(error, 0, sizeof(*error));
-            error->code = IR_ERR_NR_ARGS;
-            error->arg = arg;
-            error->lineno = arg->lineno;
-            list_add(errors, error);
-            return NULL;
+            printf("Number of arguments unequal\n");
+         exit(1);
          }
          struct list arg_types;
          list_init(&arg_types);
@@ -36,7 +31,7 @@ static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg,
          for (int i = 0; i < arg->call.args.size; i++) {
             struct ir_arg* a = (struct ir_arg*) list_get(&arg->call.args, i);
             
-            list_add(&arg_types, semantic_arg_check(funcs, a, args, errors));
+            list_add(&arg_types, semantic_arg_check(funcs, a, args));
          }
          
          struct ir_func* func = arg->call.func;
@@ -57,13 +52,13 @@ static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg,
             }
          }
          
-         arg->call.func = optimize(funcs, arg->call.func, arg_types, errors);
+         arg->call.func = optimize(funcs, arg->call.func, arg_types);
          return arg->call.func->type;
       }
    }
 }
 
-struct ir_func* optimize(struct map* funcs, struct ir_func* f, struct list args, struct list* errors) {
+struct ir_func* optimize(struct map* funcs, struct ir_func* f, struct list args) {
    {
       struct ir_func* found = map_get(funcs, f->name, strlen(f->name)+1);
       if (found == NULL) {
@@ -108,8 +103,8 @@ struct ir_func* optimize(struct map* funcs, struct ir_func* f, struct list args,
    for (int i = 0; i < list_size(&func_new->cases); i++) {
       struct ir_case* c = list_get(&func_new->cases, i);
        
-      semantic_arg_check(funcs, c->cond, args, errors);
-      struct ir_type* type = semantic_arg_check(funcs, c->func, args, errors);
+      semantic_arg_check(funcs, c->cond, args);
+      struct ir_type* type = semantic_arg_check(funcs, c->func, args);
       
       if (type != NULL) {
          j = i;
@@ -130,8 +125,8 @@ struct ir_func* optimize(struct map* funcs, struct ir_func* f, struct list args,
       }
       struct ir_case* c = list_get(&func_new->cases, i);
       
-      semantic_arg_check(funcs, c->cond, args, errors);
-      struct ir_type* type = semantic_arg_check(funcs, c->func, args, errors);
+      semantic_arg_check(funcs, c->cond, args);
+      struct ir_type* type = semantic_arg_check(funcs, c->func, args);
       
       if (type == NULL) {
          printf("cases %i in %s does not have an explicit return type\n", i+1, func_new->name);

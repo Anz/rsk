@@ -204,13 +204,17 @@ struct list ir_cases_cpy(struct ir_func* f, struct list cases) {
 }
 
 // ERROR
+bool ir_has_error(struct ir_error* err) {
+   return err->code > 0;
+}
+
 void ir_print_err(struct ir_error err) {
    struct ir_func* call;
    struct list args;
    struct ir_arg* a;
    struct ir_arg* b;
    
-   if (err.arg->arg_type == IR_ARG_CALL) {
+   if (err.arg != NULL && err.arg->arg_type == IR_ARG_CALL) {
       call = err.arg->call.func;
       args = err.arg->call.args;
       
@@ -219,9 +223,18 @@ void ir_print_err(struct ir_error err) {
          b = list_get(&args, 1);
       }
    }
+   
+   fprintf(stderr, "%s:%i\t", err.file, err.lineno);
 
    switch (err.code) {
-      case IR_ERR_BIN_OP_NE: printf("line %03i operandes must of the same type: %s %s %s\n", err.lineno, a->data.type->name, call->name, a->data.type->name); break;
-      case IR_ERR_NR_ARGS: printf("line %03i calling %s with %i arguments, function requires %i\n", err.lineno, call->name, args.size, call->params.l.size); break;// number of arguments wrong (too few/much)
+      case IR_ERR_BIN_OP_NE: 
+         fprintf(stderr, "operandes must of the same type: %s %s %s\n", a->data.type->name, call->name, a->data.type->name);
+         break;
+      case IR_ERR_NR_ARGS: 
+         fprintf(stderr, "calling %s with %i arguments, function requires %i\n", call->name, args.size, call->params.l.size);
+         break;
+      case IR_ERR_RET_TYPE:
+         fprintf(stderr, "return type of '%s' is unknown\n",  err.func->name);
+         break;
    }
 }

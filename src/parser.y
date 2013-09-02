@@ -14,7 +14,10 @@ extern FILE * yyin;
 extern int yylex();
 extern int yylineno;
 
-struct list* ins = NULL;
+char** file_names = NULL;
+int number_of_files = 0;
+int index_of_file = 0;
+
 
 struct map* funcs = NULL;
 
@@ -61,8 +64,9 @@ static struct ir_func* func_prototype(char* name, int args, struct ir_type* res)
    return f;
 }
 
-void parse(struct list* inputs, struct map* f) {
-   ins = inputs;
+void parse(char** files, int num_of_files, struct map* f) {
+   file_names = files;
+   number_of_files = num_of_files;
 
    // init structures
    funcs = f;
@@ -117,15 +121,26 @@ void parse(struct list* inputs, struct map* f) {
    func_prototype("stdin", 1, type_array);
 
    // parsing
-   yyin = (FILE*)list_pop(ins);
+   yyin = fopen(file_names[index_of_file], "r");
+   if (yyin == NULL) {
+      printf("could not open file %s", file_names[index_of_file]);
+      exit(1);
+   }
    yyparse();
 }
 
 int yywrap() {
    fclose(yyin);
-   yyin = (FILE*)list_pop(ins);
-   if (yyin == NULL) {
+   
+   index_of_file++;
+   if (index_of_file >= number_of_files) {
       return 1;
+   }
+   
+   yyin = fopen(file_names[index_of_file], "r");
+   if (yyin == NULL) {
+      printf("could not open file %s", file_names[index_of_file]);
+      exit(1);
    }
    return 0;
 }
@@ -169,7 +184,7 @@ def      : var '(' param ')' '=' case
          | '\n'
          ;
             
-var      : ID                             { $$ = func_cur = func_new($1); $$->lineno = yylineno; map_set(funcs, $$->name, strlen($$->name) + 1, $$); }
+var      : ID                             { $$ = func_cur = func_new($1); $$->lineno = yylineno; $$->file = file_names[index_of_file]; map_set(funcs, $$->name, strlen($$->name) + 1, $$); }
          ;
             
 param    : param ',' ID                   { ir_func_param(func_cur, $3, yylineno); }

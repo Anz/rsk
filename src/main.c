@@ -25,7 +25,7 @@ static const char MSG_VERSION[] =   "rsk 0.01\n"
                                     "Copyright 2013, rsk\n";
 
 
-extern void parse(struct list* inputs, struct map*);
+extern void parse(char** files, int num_of_files, struct map*);
 extern char* yycode();
 
 void bt_sighandler(int sig, siginfo_t *info,
@@ -139,48 +139,47 @@ int main (int argc, char *argv[]) {
       print_and_exit(MSG_USEAGE);
    }
    
-   out = fopen(argv[argi++], "w");
-   struct list ins;
-   list_init(&ins);
-   for (; argi < argc; argi++) {
-      FILE* in = fopen(argv[argi], "r");
-      if (in == NULL) {
-         printf("could not open file %s", argv[argi]);
-         exit(1);
-      }
-      list_add(&ins, in);
-   }
-
-   
-   
-   // print usage
+   out = fopen(argv[argi], "w");
    if (out == NULL) {
-      print_and_exit(MSG_USEAGE);
+      printf("could not open file %s", argv[argi]);
+      exit(1);
    }
+   argi++;
    
    // function map
    struct map funcs;
    map_init(&funcs);
    
    // compile into intermediate representation
-   parse(&ins, &funcs);
+   parse(&argv[argi], argc-argi, &funcs);
    
    map_t info;
    map_init(&info);
    
    semantic_check(&funcs, &info);
    
+   // print errors
+   bool has_errors = false;
+   for (map_it* it = map_iterator(&info); it != NULL; it = map_next(it)) {
+      struct info* inf = (struct info*)it->data;
+      if (ir_has_error(&inf->error) && inf->error.level == IR_LVL_SOURCE) {
+         has_errors = true;
+         ir_print_err(inf->error);
+      }
+   }
+   
+   if (has_errors) {
+      return 1;
+   }
+   
    map_clear(&info);
    
    struct list args;
    list_init(&args);
    
-   // error list
-   struct list errors;
-   list_init(&errors);
+   optimize(&funcs, map_get(&funcs, "main", 5), args);
    
-   optimize(&funcs, map_get(&funcs, "main", 5), args, &errors);
-   
+   // remove unused functions
    for (map_it* it = map_iterator(&funcs); it != NULL; it = it->next) {
       struct ir_func* f = it->data;
       if (f->type == NULL) {
@@ -195,22 +194,6 @@ int main (int argc, char *argv[]) {
          print_func(entry->data);
       }
    }
-   
-   // print error
-   if (errors.size > 0) {
-      for (list_it* it = list_iterator(&errors); it != NULL; it = list_next(it)) {
-         struct ir_error* error = (struct ir_error*)it->data;
-         ir_print_err(*error);
-         free(error);
-      }
-      
-      // cleanup
-      list_clear(&errors);
-      fclose(out);
-      
-      return 1;
-   }
-   list_clear(&errors);
 
    // compile into native code
    struct buffer buf = i32_compile(funcs);

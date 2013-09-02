@@ -17,7 +17,6 @@ static struct semantic_type semantic_func_check(struct ir_func* func, map_t* inf
    if (list_size(&func->cases) == 0) {
       struct semantic_type type;
       memset(&type, 0, sizeof(type));
-      type.param = 0;
       return type;
    }
    
@@ -42,15 +41,28 @@ static struct semantic_type semantic_func_check(struct ir_func* func, map_t* inf
       
       info->type = semantic_arg_check(c->func, infos);
       
-      if (info->type.type != NULL || info->type.param >= 0) {
+      if (info->type.type != NULL || info->type.param > 0) {
          j = i;
          break;
       }
    }
    
    
-   if (info->type.type != NULL || info->type.param >= 0) {
-      //printf("infinity loop in %s\n", func->name);
+   if (ir_has_error(&info->type.error)) {
+      info->error = info->type.error;
+      info->error.func = func;
+      info->error.file = func->file;
+      info->error.lineno = func->lineno;
+      info->error.level = IR_LVL_SUBSEQ;
+      return info->type;
+   } else if (info->type.type == NULL && info->type.param <= 0) {
+      info->error.code = IR_ERR_RET_TYPE;
+      info->error.func = func;
+      info->error.file = func->file;
+      info->error.lineno = func->lineno;
+      info->error.level = IR_LVL_SOURCE;
+      info->type.error = info->error;
+      return info->type;
    }
    
    for (int i = 0; i < list_size(&func->cases); i++) {
@@ -67,10 +79,6 @@ static struct semantic_type semantic_func_check(struct ir_func* func, map_t* inf
       }
    }
    
-   if (info->type.type == NULL && info->type.param < 0) {
-      //printf("type error\n");
-   }
-   
    return info->type;
 }
 
@@ -84,7 +92,7 @@ static struct semantic_type semantic_arg_check(struct ir_arg* arg, map_t* infos)
          return type;
          
       case IR_ARG_PARAM:
-         type.param = arg->call.param->index;
+         type.param = arg->call.param->index + 1;
          return type;
          
       case IR_ARG_CALL:

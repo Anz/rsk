@@ -5,6 +5,6 @@
 #include "ir.h"
 
 
-struct ir_func* optimize(struct map* funcs, struct ir_func* f, struct list args, struct list* errors);
+struct ir_func* optimize(struct map* funcs, struct ir_func* f, struct list args);
 
 #endif
