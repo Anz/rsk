@@ -181,12 +181,12 @@ void parse(char** files, int num_of_files, struct map* f) {
    func_prototype("-", 2, NULL);
    func_prototype("*", 2, NULL);
    func_prototype("/", 2, NULL);
-   func_prototype("=", 2, NULL);
-   func_prototype("!=", 2, NULL);
-   func_prototype("<", 2, NULL);
-   func_prototype(">", 2, NULL);
-   func_prototype("<=", 2, NULL);
-   func_prototype(">=", 2, NULL);
+   func_prototype("=", 2, type_bool);
+   func_prototype("!=", 2, type_bool);
+   func_prototype("<", 2, type_bool);
+   func_prototype(">", 2, type_bool);
+   func_prototype("<=", 2, type_bool);
+   func_prototype(">=", 2, type_bool);
    func_prototype("stdin", 1, type_array);
 
    // parsing

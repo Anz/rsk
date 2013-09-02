@@ -73,8 +73,7 @@ static struct semantic_type semantic_func_check(struct ir_func* func, map_t* inf
       
       // check condition
       struct semantic_type cond_type = semantic_arg_check(c->cond, infos);
-      if (c->cond != NULL && ( (cond_type.type != NULL && strcmp(cond_type.type->name, "bool") != 0) || (cond_type.param > 0) )) { // TODO valid if param is bool
-         printf("type: %p\n", cond_type.type);
+      if (c->cond != NULL && (cond_type.type == NULL || strcmp(cond_type.type->name, "bool") != 0)) { 
          info->error.code = IR_ERR_COND_TYPE;
          info->error.func = func;
          info->error.file = func->file;
