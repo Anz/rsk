@@ -47,7 +47,7 @@ static struct semantic_type semantic_func_check(struct ir_func* func, map_t* inf
       }
    }
    
-   
+   // check retun type
    if (ir_has_error(&info->type.error)) {
       info->error = info->type.error;
       info->error.func = func;
