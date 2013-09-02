@@ -10,6 +10,7 @@
 #define IR_ERR_NR_ARGS     0x2 // number of arguments wrong (too few/much) 
 #define IR_ERR_RET_TYPE_UN 0x3 // unknown return type
 #define IR_ERR_RET_TYPE_NE 0x4 // return type not equal in all cases
+#define IR_ERR_COND_TYPE   0x5 // return type of condition must be boolean
 
 // error levels
 #define IR_LVL_SOURCE   0x01

@@ -239,5 +239,8 @@ void ir_print_err(struct ir_error err) {
       case IR_ERR_RET_TYPE_NE:
          fprintf(stderr, "return type of '%s' is not equal in all cases\n",  err.func->name);
          break;
+      case IR_ERR_COND_TYPE:
+         fprintf(stderr, "return type in condition in function '%s' must alway be a boolean\n",  err.func->name);
+         break;
    }
 }

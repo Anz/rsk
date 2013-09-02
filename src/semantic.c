@@ -71,9 +71,22 @@ static struct semantic_type semantic_func_check(struct ir_func* func, map_t* inf
       }
       struct ir_case* c = list_get(&func->cases, i);
       
-      semantic_arg_check(c->cond, infos);
+      // check condition
+      struct semantic_type cond_type = semantic_arg_check(c->cond, infos);
+      if (c->cond != NULL && ( (cond_type.type != NULL && strcmp(cond_type.type->name, "bool") != 0) || (cond_type.param > 0) )) { // TODO valid if param is bool
+         printf("type: %p\n", cond_type.type);
+         info->error.code = IR_ERR_COND_TYPE;
+         info->error.func = func;
+         info->error.file = func->file;
+         info->error.lineno = c->lineno;
+         info->error.level = IR_LVL_SOURCE;
+         info->type.error = info->error;
+         return info->type;
+      }
+      
       struct semantic_type type = semantic_arg_check(c->func, infos);
       
+      // check return type
       if (info->type.type != type.type || info->type.param != type.param) {
          info->error.code = IR_ERR_RET_TYPE_NE;
          info->error.func = func;
