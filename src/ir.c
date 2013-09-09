@@ -74,11 +74,11 @@ struct ir_param* ir_func_param(struct ir_func* func, char* name, int lineno) {
    return p;
 }
 
-struct ir_arg* ir_arg_op(struct ir_func* func, struct ir_arg* a, struct ir_arg* b, int lineno) {
+struct ir_arg* ir_arg_op(char* func_name, struct ir_arg* a, struct ir_arg* b, int lineno) {
    struct ir_arg* arg = malloc(sizeof(*arg));
    memset(arg, 0, sizeof(*arg));
    arg->arg_type = IR_ARG_CALL;
-   arg->call.func = func;
+   arg->call.func_name = func_name;
    list_init(&arg->call.args);
    list_add(&arg->call.args, a);
    list_add(&arg->call.args, b);
@@ -87,7 +87,7 @@ struct ir_arg* ir_arg_op(struct ir_func* func, struct ir_arg* a, struct ir_arg* 
    return arg;
 }
 
-struct ir_arg* ir_arg_word(int word, struct ir_type* type, int lineno) {
+struct ir_arg* ir_arg_word(int word, ir_type_t type, int lineno) {
    struct ir_arg* arg = malloc(sizeof(*arg));
    memset(arg, 0, sizeof(*arg));
    arg->arg_type = IR_ARG_DATA;
@@ -99,7 +99,7 @@ struct ir_arg* ir_arg_word(int word, struct ir_type* type, int lineno) {
    return arg;
 }
 
-struct ir_arg* ir_arg_data(char* ptr, size_t size, struct ir_type* type, int lineno) {
+struct ir_arg* ir_arg_data(char* ptr, size_t size, ir_type_t type, int lineno) {
    struct ir_arg* arg = malloc(sizeof(*arg));
    memset(arg, 0, sizeof(*arg));
    arg->arg_type = IR_ARG_DATA;
@@ -112,7 +112,7 @@ struct ir_arg* ir_arg_data(char* ptr, size_t size, struct ir_type* type, int lin
 }
 
 
-struct ir_arg* ir_arg_call(struct map* funcs, struct ir_func* func, char* name, struct list* args, int lineno) {
+struct ir_arg* ir_arg_call(struct ir_func* func, char* name, struct list* args, int lineno) {
    func->ref++;
 
    struct ir_arg* arg = malloc(sizeof(*arg));
@@ -127,27 +127,36 @@ struct ir_arg* ir_arg_call(struct map* funcs, struct ir_func* func, char* name, 
    // parameter
    if (param != NULL) {
       arg->arg_type = IR_ARG_PARAM;
-      arg->call.param = param;
+      arg->call.param = param->index;
       return arg;
    }
    
    // func
-   struct ir_func* call = map_get(funcs, name, strlen(name) + 1);
-   if (call == NULL) {
-      call = ir_func_init(name, -1);
-      map_set(funcs, call->name, strlen(call->name) + 1, call);
-   }
-   
    arg->arg_type = IR_ARG_CALL;
-   arg->call.func = call;
+   arg->call.func_name = name;
    
    return arg;
+}
+
+// TYPE
+ir_type_t ir_type(char* name) {
+   ir_type_t type = malloc(sizeof(type));
+   list_init(type);
+   list_add(type, name);
+   return type;
+}
+
+bool ir_type_cmp(ir_type_t type, char* name) {
+   if (list_size(type) != 1) {
+      return false;
+   }
+
+   return strcmp(list_get(type, 0), name) == 0;
 }
 
 // COPY
 struct ir_func* ir_func_cpy(struct ir_func* f) {
    struct ir_func* cpy = ir_func_init(f->name, f->lineno);
-   cpy->type = f->type;
    ir_params_cpy(cpy, f->params);
    cpy->cases = ir_cases_cpy(cpy, f->cases);
    return cpy;
@@ -170,7 +179,7 @@ struct ir_arg* ir_arg_cpy(struct ir_func* f, struct ir_arg* a) {
          struct ir_arg* arg = malloc(sizeof(*arg));
          memset(arg, 0, sizeof(*arg));
          arg->arg_type = IR_ARG_CALL;
-         arg->call.func = a->call.func;
+         arg->call.func_name = a->call.func_name;
          arg->lineno = a->lineno;
          for (list_it* it = list_iterator(&a->call.args); it != NULL; it = it->next) {
             list_add(&arg->call.args, ir_arg_cpy(f, it->data));
@@ -181,7 +190,7 @@ struct ir_arg* ir_arg_cpy(struct ir_func* f, struct ir_arg* a) {
          struct ir_arg* arg = malloc(sizeof(*arg));
          memset(arg, 0, sizeof(*arg));
          arg->arg_type = IR_ARG_PARAM;
-         arg->call.param = ((struct map_entry*)list_get(&f->params.l, a->call.param->index))->data;
+         arg->call.param = a->call.param;
          arg->lineno = a->lineno;
          for (list_it* it = list_iterator(&a->call.args); it != NULL; it = it->next) {
             list_add(&arg->call.args, ir_arg_cpy(f, it->data));
@@ -208,14 +217,32 @@ bool ir_has_error(struct ir_error* err) {
    return err->code > 0;
 }
 
+static char* typestr(char* buf, ir_type_t type) {
+   *(buf++) = '(';
+   for (int j = 0; j < list_size(type); j++) {
+      if (j > 0) {
+         *(buf++) = ',';
+      }
+
+      ir_type_t t = list_get(type, j);
+      if (list_size(t) == 1) {
+         buf = strcpy(buf, list_get(t, 0)) + 1;
+      } else {
+         buf = typestr(buf, t);
+      }
+   }
+   *(buf++) = ')';
+   return buf;
+}
+
 void ir_print_err(struct ir_error err) {
-   struct ir_func* call;
+   char* call;
    struct list args;
    struct ir_arg* a;
    struct ir_arg* b;
    
    if (err.arg != NULL && err.arg->arg_type == IR_ARG_CALL) {
-      call = err.arg->call.func;
+      call = err.arg->call.func_name;
       args = err.arg->call.args;
       
       if (args.size >= 2) {
@@ -227,11 +254,15 @@ void ir_print_err(struct ir_error err) {
    fprintf(stderr, "%s:%i\t", err.file, err.lineno);
 
    switch (err.code) {
-      case IR_ERR_BIN_OP_NE: 
-         fprintf(stderr, "operandes must of the same type: %s %s %s\n", a->data.type->name, call->name, a->data.type->name);
+      case IR_ERR_BIN_OP_NE: { 
+         char a_type[512], b_type[512];
+         typestr(a_type, a->data.type);
+         typestr(b_type, b->data.type);
+         fprintf(stderr, "operandes must of the same type: %s %s %s\n", a_type, call, b_type);
          break;
+      }
       case IR_ERR_NR_ARGS: 
-         fprintf(stderr, "calling %s with %i arguments, function requires %i\n", call->name, args.size, call->params.l.size);
+         fprintf(stderr, "calling %s with %i arguments, function requires --\n", call, args.size);
          break;
       case IR_ERR_RET_TYPE_UN:
          fprintf(stderr, "return type of '%s' is unknown\n",  err.func->name);

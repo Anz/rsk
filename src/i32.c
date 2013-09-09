@@ -62,22 +62,6 @@ void x86_loadd(buffer_t* text, char* label) {
    argidx++;
 }
 
-void* funcs_ow[][2] = {
-   { "int+", "\tadd %%ebx, %%eax\n" },
-   { "int-", "\tsub %%ebx, %%eax\n" },
-   { "int*", "\timul %%ebx, %%eax\n" },
-   { "int/", "\txor %%edx, %%edx\n\tidiv %%ebx\n" },
-   { "int=", "\tsub %%ebx, %%eax\n" },
-   { "int<", "\tsub %%ebx, %%eax\n\tshr $31, %%eax\n\tadd $-1, %%eax\n" },
-   { "int>", "\tsub %%eax, %%ebx\n\tshr $31, %%ebx\n\tmov %%ebx, %%eax\n\tadd $-1, %%eax\n" },
-   { "int<=", "\tsub %%eax, %%ebx\n\tshr $31, %%ebx\n\tmov %%ebx, %%eax\n" },
-   { "int>=", "\tsub %%ebx, %%eax\n\tshr $31, %%eax\n" },
-   { "float+", "\tadd %%ebx, %%eax\n" },
-   { "array+", "\tcall _concat\n" },
-   { "array=", "\tcall _memcmp\n" },
-   { "array!=", "\tcall _memcmp\n\tadd $-1, %%eax\n" },
-};
-
 void x86_save_reg(buffer_t* text, int args) {
    switch (args) {
       case 0: break;
@@ -103,32 +87,17 @@ void x86_call(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count)
    argidx = 0;
    
    x86_save_reg(text, tmpargidx);
- 
-   struct ir_func* func = arg->call.func;
+
+   char* name = arg->call.func_name;
    struct ir_arg* left_op = list_get(&arg->call.args, 0);
 
-   // binary operation overwrite
-   for (int i = 0; i < sizeof(funcs_ow) / sizeof(funcs_ow[0]); i++) {
-      char* name = (char*)funcs_ow[i][0];
-      char* value = (char*)funcs_ow[i][1];
-      if (strcmp(name, func->name) == 0) {
-         if (strcmp("array+", func->name) == 0) {
-            x86_func_compile(text, data, (struct ir_arg*) list_get(&arg->call.args, 0), arg_count);
-            buffer_writes(text, "\tcall _print\n");
-            argidx--;
-            x86_func_compile(text, data, (struct ir_arg*) list_get(&arg->call.args, 1), arg_count);
-         } else {
-            x86_func_compile(text, data, (struct ir_arg*) list_get(&arg->call.args, 0), arg_count);
-            x86_func_compile(text, data, (struct ir_arg*) list_get(&arg->call.args, 1), arg_count);
-            buffer_writes(text, value);
-         }
-         
-         x86_restore_reg(text, tmpargidx);
-         argidx = tmpargidx + 1;
-         return;
-      }
+   if (strcmp("typeof",name) == 0) {
+      x86_restore_reg(text, tmpargidx);
+      buffer_writes(text, "\tmov $_int, %%eax\n");
+      argidx = tmpargidx + 1;
+      return;
    }
-   
+
    for (int i = 0; i < arg->call.args.size; i++) {
       struct ir_arg* a =  (struct ir_arg*) list_get(&arg->call.args, i);
       x86_func_compile(text, data, a, arg_count);
@@ -140,7 +109,7 @@ void x86_call(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count)
    sprintf(call, 
       "\tcall %s\n"
       "\tadd $%i, %%esp\n",
-      func->name, 4*max(0, list_size(&func->params.l)-4));
+      name, 4*max(0, list_size(&arg->call.args)-4));
    buffer_write(text, call, strlen(call));
    
    x86_restore_reg(text, tmpargidx);
@@ -168,11 +137,11 @@ void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int ar
          break;
       }
       case IR_ARG_PARAM: {
-         x86_loadp(text, arg->call.param->index, arg_count);
+         x86_loadp(text, arg->call.param, arg_count);
          break;
       }
       case IR_ARG_DATA: {
-         if (strcmp(arg->data.type->name, "array") != 0) {
+         if (!ir_type_cmp(arg->data.type, "array")) {
             x86_loadv(text, arg->data.word);
          } else {
             char name[512];

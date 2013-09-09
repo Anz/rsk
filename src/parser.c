@@ -71,7 +71,6 @@
 
 #include "map.h"
 #include "elf.h"
-#include "x86.h"
 #include "ir.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -92,11 +91,6 @@ struct map* funcs = NULL;
 
 struct ir_func* func_cur = NULL;
 
-struct ir_type* type_bool = NULL;
-struct ir_type* type_int = NULL;
-struct ir_type* type_float = NULL;
-struct ir_type* type_array = NULL;
-
 void yyerror(const char *str) {
    fprintf(stderr,"parser error on line %i: %s\n", yylineno,str);
    exit(1);
@@ -115,79 +109,12 @@ struct ir_func* func_new(char* name) {
 
 int yyparse ();
 
-static struct ir_func* func_prototype(char* name, int args, struct ir_type* res) {   
-   // setup functions
-   struct ir_func* f = func_new(name);
-   f->type = res;
-   
-   for (int i = 0; i < args; i++) {
-      struct ir_param* param = malloc(sizeof(*param));
-      memset(param, 0, sizeof(*param));
-      char buf[100];
-      sprintf(buf, "arg%i", i);
-      param->name = strdup(buf);
-      
-      map_set(&f->params, param->name, strlen(param->name)+1, param);
-   }
-   
-   return f;
-}
-
 void parse(char** files, int num_of_files, struct map* f) {
    file_names = files;
    number_of_files = num_of_files;
 
    // init structures
    funcs = f;
-
-   // setup types
-   type_bool = malloc(sizeof(*type_bool));
-   type_bool->name = "bool";
-   map_init(&type_bool->ops);
-   map_set(&type_bool->ops, "=", 2, func_prototype("int=", 2, type_bool));
-   map_set(&type_bool->ops, "<", 2, func_prototype("int<", 2, type_bool));
-   map_set(&type_bool->ops, ">", 2, func_prototype("int>", 2, type_bool));
-   map_set(&type_bool->ops, "<=", 3, func_prototype("int<=", 2, type_bool));
-   map_set(&type_bool->ops, ">=", 3, func_prototype("int>=", 2, type_bool));
-   
-   
-   type_int = malloc(sizeof(*type_int));
-   type_int->name = "int";
-   map_init(&type_int->ops);
-   map_set(&type_int->ops, "+", 2, func_prototype("int+", 2, type_int));
-   map_set(&type_int->ops, "-", 2, func_prototype("int-", 2, type_int));
-   map_set(&type_int->ops, "*", 2, func_prototype("int*", 2, type_int));
-   map_set(&type_int->ops, "/", 2, func_prototype("int/", 2, type_int));
-   map_set(&type_int->ops, "=", 2, func_prototype("int=", 2, type_bool));
-   map_set(&type_int->ops, "<", 2, func_prototype("int<", 2, type_bool));
-   map_set(&type_int->ops, ">", 2, func_prototype("int>", 2, type_bool));
-   map_set(&type_int->ops, "<=", 3, func_prototype("int<=", 2, type_bool));
-   map_set(&type_int->ops, ">=", 3, func_prototype("int>=", 2, type_bool));
-   
-   type_float = malloc(sizeof(*type_float));
-   type_float->name = "float";
-   map_init(&type_float->ops);
-   map_set(&type_float->ops, "+", 2, func_prototype("float+", 2, type_float));
-   
-   type_array = malloc(sizeof(*type_array));
-   type_array->name = "array";
-   map_init(&type_array->ops);
-   map_set(&type_array->ops, "+", 2, func_prototype("array+", 2, type_array));
-   map_set(&type_array->ops, "=", 2, func_prototype("array=", 2, type_bool));
-   map_set(&type_array->ops, "!=", 3, func_prototype("array!=", 2, type_bool));
-   
-   // setup functions
-   func_prototype("+", 2, NULL);
-   func_prototype("-", 2, NULL);
-   func_prototype("*", 2, NULL);
-   func_prototype("/", 2, NULL);
-   func_prototype("=", 2, type_bool);
-   func_prototype("!=", 2, type_bool);
-   func_prototype("<", 2, type_bool);
-   func_prototype(">", 2, type_bool);
-   func_prototype("<=", 2, type_bool);
-   func_prototype(">=", 2, type_bool);
-   func_prototype("stdin", 1, type_array);
 
    // parsing
    yyin = fopen(file_names[index_of_file], "r");
@@ -217,7 +144,7 @@ int yywrap() {
 
 
 /* Line 268 of yacc.c  */
-#line 221 "src/parser.c"
+#line 148 "src/parser.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -258,7 +185,7 @@ typedef union YYSTYPE
 {
 
 /* Line 293 of yacc.c  */
-#line 153 "src/parser.y"
+#line 80 "src/parser.y"
 
    int word;
    char* str;
@@ -274,7 +201,7 @@ typedef union YYSTYPE
 
 
 /* Line 293 of yacc.c  */
-#line 278 "src/parser.c"
+#line 205 "src/parser.c"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -286,7 +213,7 @@ typedef union YYSTYPE
 
 
 /* Line 343 of yacc.c  */
-#line 290 "src/parser.c"
+#line 217 "src/parser.c"
 
 #ifdef short
 # undef short
@@ -587,10 +514,10 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,   177,   177,   178,   181,   182,   183,   184,   187,   190,
-     191,   194,   195,   196,   199,   200,   201,   202,   203,   204,
-     205,   209,   210,   211,   214,   215,   216,   219,   220,   221,
-     222,   223,   224,   227,   228
+       0,   104,   104,   105,   108,   109,   110,   111,   114,   117,
+     118,   121,   122,   123,   126,   127,   128,   129,   130,   131,
+     132,   136,   137,   138,   141,   142,   143,   146,   147,   148,
+     149,   150,   151,   154,   155
 };
 #endif
 
@@ -1565,189 +1492,189 @@ yyreduce:
         case 5:
 
 /* Line 1806 of yacc.c  */
-#line 182 "src/parser.y"
+#line 109 "src/parser.y"
     { list_add(&(yyvsp[(1) - (7)].func)->cases, ir_func_case(NULL, (yyvsp[(6) - (7)].arg), yylineno)); }
     break;
 
   case 6:
 
 /* Line 1806 of yacc.c  */
-#line 183 "src/parser.y"
+#line 110 "src/parser.y"
     { list_add(&(yyvsp[(1) - (4)].func)->cases, ir_func_case(NULL, (yyvsp[(3) - (4)].arg), yylineno)); }
     break;
 
   case 8:
 
 /* Line 1806 of yacc.c  */
-#line 187 "src/parser.y"
+#line 114 "src/parser.y"
     { (yyval.func) = func_cur = func_new((yyvsp[(1) - (1)].str)); (yyval.func)->lineno = yylineno; (yyval.func)->file = file_names[index_of_file]; map_set(funcs, (yyval.func)->name, strlen((yyval.func)->name) + 1, (yyval.func)); }
     break;
 
   case 9:
 
 /* Line 1806 of yacc.c  */
-#line 190 "src/parser.y"
+#line 117 "src/parser.y"
     { ir_func_param(func_cur, (yyvsp[(3) - (3)].str), yylineno); }
     break;
 
   case 10:
 
 /* Line 1806 of yacc.c  */
-#line 191 "src/parser.y"
+#line 118 "src/parser.y"
     { ir_func_param(func_cur, (yyvsp[(1) - (1)].str), yylineno); }
     break;
 
   case 11:
 
 /* Line 1806 of yacc.c  */
-#line 194 "src/parser.y"
+#line 121 "src/parser.y"
     { list_add(&func_cur->cases, ir_func_case((yyvsp[(5) - (6)].arg), (yyvsp[(3) - (6)].arg), yylineno)); }
     break;
 
   case 12:
 
 /* Line 1806 of yacc.c  */
-#line 195 "src/parser.y"
+#line 122 "src/parser.y"
     { list_add(&func_cur->cases, ir_func_case((yyvsp[(4) - (5)].arg), (yyvsp[(2) - (5)].arg), yylineno)); }
     break;
 
   case 13:
 
 /* Line 1806 of yacc.c  */
-#line 196 "src/parser.y"
+#line 123 "src/parser.y"
     { list_add(&func_cur->cases, ir_func_case(NULL, (yyvsp[(2) - (3)].arg), yylineno)); }
     break;
 
   case 14:
 
 /* Line 1806 of yacc.c  */
-#line 199 "src/parser.y"
-    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str)), (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
+#line 126 "src/parser.y"
+    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str))->name, (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
     break;
 
   case 15:
 
 /* Line 1806 of yacc.c  */
-#line 200 "src/parser.y"
-    { (yyval.arg) = ir_arg_op(func_new("!="), (yyvsp[(1) - (4)].arg), (yyvsp[(4) - (4)].arg), yylineno); }
+#line 127 "src/parser.y"
+    { (yyval.arg) = ir_arg_op(func_new("!=")->name, (yyvsp[(1) - (4)].arg), (yyvsp[(4) - (4)].arg), yylineno); }
     break;
 
   case 16:
 
 /* Line 1806 of yacc.c  */
-#line 201 "src/parser.y"
-    { (yyval.arg) = ir_arg_op(func_new("<="), (yyvsp[(1) - (4)].arg), (yyvsp[(4) - (4)].arg), yylineno); }
+#line 128 "src/parser.y"
+    { (yyval.arg) = ir_arg_op(func_new("<=")->name, (yyvsp[(1) - (4)].arg), (yyvsp[(4) - (4)].arg), yylineno); }
     break;
 
   case 17:
 
 /* Line 1806 of yacc.c  */
-#line 202 "src/parser.y"
-    { (yyval.arg) = ir_arg_op(func_new(">="), (yyvsp[(1) - (4)].arg), (yyvsp[(4) - (4)].arg), yylineno); }
+#line 129 "src/parser.y"
+    { (yyval.arg) = ir_arg_op(func_new(">=")->name, (yyvsp[(1) - (4)].arg), (yyvsp[(4) - (4)].arg), yylineno); }
     break;
 
   case 18:
 
 /* Line 1806 of yacc.c  */
-#line 203 "src/parser.y"
-    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str)), (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
+#line 130 "src/parser.y"
+    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str))->name, (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
     break;
 
   case 19:
 
 /* Line 1806 of yacc.c  */
-#line 204 "src/parser.y"
-    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str)), (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
+#line 131 "src/parser.y"
+    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str))->name, (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
     break;
 
   case 21:
 
 /* Line 1806 of yacc.c  */
-#line 209 "src/parser.y"
-    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str)), (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
+#line 136 "src/parser.y"
+    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str))->name, (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
     break;
 
   case 22:
 
 /* Line 1806 of yacc.c  */
-#line 210 "src/parser.y"
-    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str)), (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
+#line 137 "src/parser.y"
+    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str))->name, (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
     break;
 
   case 24:
 
 /* Line 1806 of yacc.c  */
-#line 214 "src/parser.y"
-    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str)), (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
+#line 141 "src/parser.y"
+    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str))->name, (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
     break;
 
   case 25:
 
 /* Line 1806 of yacc.c  */
-#line 215 "src/parser.y"
-    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str)), (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
+#line 142 "src/parser.y"
+    { (yyval.arg) = ir_arg_op(func_new((yyvsp[(2) - (3)].str))->name, (yyvsp[(1) - (3)].arg), (yyvsp[(3) - (3)].arg), yylineno); }
     break;
 
   case 27:
 
 /* Line 1806 of yacc.c  */
-#line 219 "src/parser.y"
+#line 146 "src/parser.y"
     { (yyval.arg) = (yyvsp[(2) - (3)].arg); }
     break;
 
   case 28:
 
 /* Line 1806 of yacc.c  */
-#line 220 "src/parser.y"
-    { (yyval.arg) = ir_arg_word((yyvsp[(1) - (1)].word), type_int, yylineno); }
+#line 147 "src/parser.y"
+    { (yyval.arg) = ir_arg_word((yyvsp[(1) - (1)].word), ir_type("int"), yylineno); }
     break;
 
   case 29:
 
 /* Line 1806 of yacc.c  */
-#line 221 "src/parser.y"
-    { (yyval.arg) = ir_arg_word((yyvsp[(1) - (1)].word), type_float, yylineno); }
+#line 148 "src/parser.y"
+    { (yyval.arg) = ir_arg_word((yyvsp[(1) - (1)].word), ir_type("float"), yylineno); }
     break;
 
   case 30:
 
 /* Line 1806 of yacc.c  */
-#line 222 "src/parser.y"
-    { (yyval.arg) = ir_arg_data((yyvsp[(1) - (1)].data).ptr, (yyvsp[(1) - (1)].data).size, type_array, yylineno); }
+#line 149 "src/parser.y"
+    { (yyval.arg) = ir_arg_data((yyvsp[(1) - (1)].data).ptr, (yyvsp[(1) - (1)].data).size, ir_type("array"), yylineno); }
     break;
 
   case 31:
 
 /* Line 1806 of yacc.c  */
-#line 223 "src/parser.y"
-    { (yyval.arg) = ir_arg_call(funcs, func_cur, (yyvsp[(1) - (4)].str), (yyvsp[(3) - (4)].list), yylineno); }
+#line 150 "src/parser.y"
+    { (yyval.arg) = ir_arg_call(func_cur, (yyvsp[(1) - (4)].str), (yyvsp[(3) - (4)].list), yylineno); }
     break;
 
   case 32:
 
 /* Line 1806 of yacc.c  */
-#line 224 "src/parser.y"
-    { (yyval.arg) = ir_arg_call(funcs, func_cur, (yyvsp[(1) - (1)].str), NULL, yylineno); }
+#line 151 "src/parser.y"
+    { (yyval.arg) = ir_arg_call(func_cur, (yyvsp[(1) - (1)].str), NULL, yylineno); }
     break;
 
   case 33:
 
 /* Line 1806 of yacc.c  */
-#line 227 "src/parser.y"
+#line 154 "src/parser.y"
     { (yyval.list) = (yyvsp[(1) - (3)].list); list_add((yyval.list), (yyvsp[(3) - (3)].arg)); }
     break;
 
   case 34:
 
 /* Line 1806 of yacc.c  */
-#line 228 "src/parser.y"
+#line 155 "src/parser.y"
     { PARSER_INIT((yyval.list)); list_add((yyval.list), (yyvsp[(1) - (1)].arg)); }
     break;
 
 
 
 /* Line 1806 of yacc.c  */
-#line 1751 "src/parser.c"
+#line 1678 "src/parser.c"
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1978,6 +1905,6 @@ yyreturn:
 
 
 /* Line 2067 of yacc.c  */
-#line 230 "src/parser.y"
+#line 157 "src/parser.y"
 
 

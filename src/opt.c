@@ -12,13 +12,13 @@ static void concat(char* dst, char delimitor, int n, char* strs[]) {
    }
 }
 
-static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg, struct list args) {   
+static struct ir_type* semantic_arg_check(struct map* funcs, map_t* info, struct ir_arg* arg, struct list args) {   
    if (arg == NULL) {
       return NULL;
    }
 
    switch (arg->arg_type) {
-      case IR_ARG_DATA: return arg->data.type;
+      case IR_ARG_DATA: return list_get(&arg->data.types, 0);
       case IR_ARG_PARAM: return list_get(&args, arg->call.param->index);
       case IR_ARG_CALL: {
          if (arg->call.args.size != arg->call.func->params.l.size) {
@@ -31,7 +31,7 @@ static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg,
          for (int i = 0; i < arg->call.args.size; i++) {
             struct ir_arg* a = (struct ir_arg*) list_get(&arg->call.args, i);
             
-            list_add(&arg_types, semantic_arg_check(funcs, a, args));
+            list_add(&arg_types, semantic_arg_check(funcs, info, a, args));
          }
          
          struct ir_func* func = arg->call.func;
@@ -52,13 +52,12 @@ static struct ir_type* semantic_arg_check(struct map* funcs, struct ir_arg* arg,
             }
          }
          
-         arg->call.func = optimize(funcs, arg->call.func, arg_types);
-         return arg->call.func->type;
+         return optimize(funcs, info, arg->call.func, arg_types);
       }
    }
 }
 
-struct ir_func* optimize(struct map* funcs, struct ir_func* f, struct list args) {
+struct ir_type* optimize(struct map* funcs, map_t* info, struct ir_func* f, struct list args) {
    {
       struct ir_func* found = map_get(funcs, f->name, strlen(f->name)+1);
       if (found == NULL) {
@@ -103,8 +102,8 @@ struct ir_func* optimize(struct map* funcs, struct ir_func* f, struct list args)
    for (int i = 0; i < list_size(&func_new->cases); i++) {
       struct ir_case* c = list_get(&func_new->cases, i);
        
-      semantic_arg_check(funcs, c->cond, args);
-      struct ir_type* type = semantic_arg_check(funcs, c->func, args);
+      semantic_arg_check(funcs, info, c->cond, args);
+      struct ir_type* type = semantic_arg_check(funcs, info, c->func, args);
       
       if (type != NULL) {
          j = i;
@@ -125,8 +124,8 @@ struct ir_func* optimize(struct map* funcs, struct ir_func* f, struct list args)
       }
       struct ir_case* c = list_get(&func_new->cases, i);
       
-      semantic_arg_check(funcs, c->cond, args);
-      struct ir_type* type = semantic_arg_check(funcs, c->func, args);
+      semantic_arg_check(funcs, info, c->cond, args);
+      struct ir_type* type = semantic_arg_check(funcs, info, c->func, args);
       
       if (type == NULL) {
          printf("cases %i in %s does not have an explicit return type\n", i+1, func_new->name);

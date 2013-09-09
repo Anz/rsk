@@ -2,6 +2,7 @@
 #define LIST_H
 
 #include <string.h>
+#include <stdbool.h>
 
 struct list_item {
    void* data;
@@ -27,6 +28,6 @@ void* list_remove_item(struct list* l, void* data);
 list_it* list_iterator(struct list* l);
 list_it* list_next(list_it* it);
 void* list_pop(struct list* l);
-
+bool list_eq(list_t* a, list_t* b);
 
 #endif

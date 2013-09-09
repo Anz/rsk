@@ -36,61 +36,6 @@ void print_and_exit(const char* msg) {
     exit(EXIT_FAILURE);
 }
 
-
-void print_arg(struct ir_arg* arg) {
-   switch (arg->arg_type) {
-      case IR_ARG_CALL:
-         for (int i = 0; i < arg->call.args.size; i++) {
-            struct ir_arg* a = (struct ir_arg*) list_get(&arg->call.args, i);
-            print_arg(a);
-         }
-         
-         struct ir_func* f = arg->call.func;
-         printf("\t(type: %s)\tcall %s\n", f->type->name, f->name);
-         
-         break;
-      case IR_ARG_PARAM:
-         printf("\t(type: unknown)\tload %s\n", arg->call.param->name);
-         break;
-      case IR_ARG_DATA:
-         if (arg->data.size == 4) {
-            printf("\t(type: %s)\tload #%i\n", arg->data.type->name, arg->data.word); 
-         } else {
-            printf("\t(type: %s)\tload '%s'\n", arg->data.type->name, (char*)arg->data.ptr);
-         }
-         break;
-      default: printf("\tunknown %i\n", arg->arg_type); break;
-   }
-}
-
-void print_func(struct ir_func* f) {
-   if (list_size(&f->cases) == 0) {
-      return;
-   }
-   
-   printf("%s %s", f->type->name, f->name);
-   
-   if (f->params.l.size > 0) {
-      map_it* it = map_iterator(&f->params);
-      struct ir_param* param = (struct ir_param*) it->data;
-      
-      printf("(%s %s", "unknown", param->name);
-      
-      it = map_next(it);
-      while (it != NULL) {
-         param = (struct ir_param*) it->data;
-         printf(", %s %s", "unknown", param->name);
-         it = map_next(it);
-      }
-      printf(")");
-   }
-   printf(":\n");
-   
-   print_arg(((struct ir_case*)list_get(&f->cases, 0))->func);
-   printf("\n");
-}
-
-
 int main (int argc, char *argv[]) {
    struct sigaction sa;
 
@@ -153,18 +98,15 @@ int main (int argc, char *argv[]) {
    // compile into intermediate representation
    parse(&argv[argi], argc-argi, &funcs);
    
-   map_t info;
-   map_init(&info);
-   
-   semantic_check(&funcs, &info);
+   semantic_check(&funcs);
    
    // print errors
    bool has_errors = false;
-   for (map_it* it = map_iterator(&info); it != NULL; it = map_next(it)) {
-      struct info* inf = (struct info*)it->data;
-      if (ir_has_error(&inf->error) && inf->error.level == IR_LVL_SOURCE) {
+   for (map_it* it = map_iterator(&funcs); it != NULL; it = map_next(it)) {
+      struct ir_func* func = (struct ir_func*)it->data;
+      if (ir_has_error(&func->err) && func->err.level == IR_LVL_SOURCE) {
          has_errors = true;
-         ir_print_err(inf->error);
+         ir_print_err(func->err);
       }
    }
    
@@ -173,12 +115,11 @@ int main (int argc, char *argv[]) {
       return 1;
    }
    
-   map_clear(&info);
    
-   struct list args;
+   /*struct list args;
    list_init(&args);
    
-   optimize(&funcs, map_get(&funcs, "main", 5), args);
+   optimize(&funcs, &info, map_get(&funcs, "main", 5), args);
    
    // remove unused functions
    for (map_it* it = map_iterator(&funcs); it != NULL; it = it->next) {
@@ -186,15 +127,8 @@ int main (int argc, char *argv[]) {
       if (f->type == NULL) {
          map_set(&funcs, f->name, strlen(f->name)+1, NULL);
       }
-   }
-   
-   // print tree
-   if (verbose) {
-      for (struct list_item* item = funcs.l.first; item != NULL; item = item->next) {
-         struct map_entry* entry = (struct map_entry*) item->data;
-         print_func(entry->data);
-      }
-   }
+   }*/
+
 
    // compile into native code
    struct buffer buf = i32_compile(funcs);

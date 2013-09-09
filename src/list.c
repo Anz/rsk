@@ -129,3 +129,19 @@ list_it* list_next(list_it* it) {
 void* list_pop(struct list* l) {
    return list_remove(l,0);
 }
+
+bool list_eq(list_t* a, list_t* b) {
+   if (list_size(a) != list_size(b)) {
+      return false;
+   }
+
+   list_it* a_it = list_iterator(a);
+   list_it* b_it = list_iterator(b);
+
+   while (a_it != NULL) {
+      if (a_it->data != b_it->data) {
+         return false;
+      }
+   }
+   return true;
+}

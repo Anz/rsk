@@ -1,6 +1,6 @@
 
 all: bin src/scanner.c src/parser.c src/x86_fun.c
-	@gcc -std=gnu99 -D_GNU_SOURCE  -g -o bin/rev src/list.c src/map.c src/buffer.c src/ir.c src/scanner.c src/parser.c src/semantic.c src/opt.c src/i32.c src/main.c 
+	@gcc -std=gnu99 -D_GNU_SOURCE  -g -o bin/rev src/list.c src/map.c src/buffer.c src/ir.c src/scanner.c src/parser.c src/semantic.c src/i32.c src/main.c 
 
 bin:
 	@mkdir bin

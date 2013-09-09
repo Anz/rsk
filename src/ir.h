@@ -25,10 +25,7 @@
 struct ir_func;
 struct ir_param;
 
-struct ir_type {
-   char* name;
-   struct map ops;
-};
+typedef list_t* ir_type_t;
 
 struct ir_param {
    char* name;
@@ -41,8 +38,8 @@ struct ir_arg {
    union {
       struct {
          union {
-            struct ir_param* param;
-            struct ir_func* func;
+            int param;
+            char* func_name;
          };
          struct list args;
       } call;
@@ -52,7 +49,7 @@ struct ir_arg {
             void* ptr;
          };
          size_t size;
-         struct ir_type* type;
+         ir_type_t type;
       } data;
    };
    
@@ -65,16 +62,6 @@ struct ir_case {
    int lineno;
 };
 
-struct ir_func {
-   char* name;
-   struct map params;
-   struct list cases;
-   struct ir_type* type;
-   char* file;
-   int lineno;
-   int ref;
-};
-
 struct ir_error {
    int code;
    struct ir_func* func;
@@ -84,15 +71,31 @@ struct ir_error {
    int level;
 };
 
+struct ir_func {
+   char* name;
+   struct map params;
+   struct list cases;
+   char* file;
+   ir_type_t type;
+   int param;
+   int lineno;
+   int ref;
+   struct ir_error err;
+};
+
 // construction
 struct ir_func* ir_func_init(char* name, int lineno);
 void ir_func_clear(struct ir_func* f);
 struct ir_case* ir_func_case(struct ir_arg* cond, struct ir_arg* func, int lineno);
 struct ir_param* ir_func_param(struct ir_func* func, char* name, int lineno);
-struct ir_arg* ir_arg_op(struct ir_func* func, struct ir_arg* a, struct ir_arg* b, int lineno);
-struct ir_arg* ir_arg_word(int word, struct ir_type* type, int lineno);
-struct ir_arg* ir_arg_data(char* ptr, size_t size, struct ir_type* type, int lineno);
-struct ir_arg* ir_arg_call(struct map* funcs, struct ir_func* func, char* name, struct list* args, int lineno);
+struct ir_arg* ir_arg_op(char* func_name, struct ir_arg* a, struct ir_arg* b, int lineno);
+struct ir_arg* ir_arg_word(int word, ir_type_t type, int lineno);
+struct ir_arg* ir_arg_data(char* ptr, size_t size, ir_type_t type, int lineno);
+struct ir_arg* ir_arg_call(struct ir_func* func, char* name, struct list* args, int lineno);
+
+// type
+ir_type_t ir_type(char* name);
+bool ir_type_cmp(ir_type_t type, char* name);
 
 // copy
 struct ir_func* ir_func_cpy(struct ir_func* f);
