@@ -93,6 +93,9 @@ struct ir_arg* ir_arg_word(int word, ir_type_t type, int lineno);
 struct ir_arg* ir_arg_data(char* ptr, size_t size, ir_type_t type, int lineno);
 struct ir_arg* ir_arg_call(struct ir_func* func, char* name, struct list* args, int lineno);
 
+// information
+ir_type_t ir_typeof(map_t* funcs, ir_type_t args, struct ir_arg* arg);
+
 // type
 ir_type_t ir_type(char* name);
 bool ir_type_cmp(ir_type_t type, char* name);
@@ -103,7 +106,11 @@ void ir_params_cpy(struct ir_func* f, struct map params);
 struct ir_arg* ir_arg_cpy(struct ir_func* f, struct ir_arg* a);
 struct list ir_cases_cpy(struct ir_func* f, struct list cases);
 
+// utils
+void ir_rem_unused(map_t* funcs);
+
 // error function
+char* ir_typestr(char* buf, ir_type_t type);
 bool ir_has_error(struct ir_error* err);
 void ir_print_err(struct ir_error err);
 

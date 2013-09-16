@@ -1647,7 +1647,7 @@ yyreduce:
 
 /* Line 1806 of yacc.c  */
 #line 150 "src/parser.y"
-    { (yyval.arg) = ir_arg_call(func_cur, (yyvsp[(1) - (4)].str), (yyvsp[(3) - (4)].list), yylineno); }
+    { (yyval.arg) = ir_arg_call(func_cur, (yyvsp[(1) - (4)].str), (yyvsp[(3) - (4)].list), yylineno); struct ir_func* f = map_get(funcs, (yyvsp[(1) - (4)].str), strlen((yyvsp[(1) - (4)].str))+1); if (f) f->ref++; }
     break;
 
   case 32:

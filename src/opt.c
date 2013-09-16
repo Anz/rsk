@@ -1,142 +1,73 @@
 #include "opt.h"
 #include <stdio.h>
 
-static void concat(char* dst, char delimitor, int n, char* strs[]) {
-   for (int i = 0; i <n; i++) {
-      char* str = strs[i];
-      strcpy(dst, str);
-      if (i < n - 1) {
-         dst += strlen(str);
-         *(dst++) = delimitor;
-      }
-   }
-}
+int id = 1;
 
-static struct ir_type* semantic_arg_check(struct map* funcs, map_t* info, struct ir_arg* arg, struct list args) {   
-   if (arg == NULL) {
-      return NULL;
-   }
+static void opt_func(map_t* funcs, struct ir_func* func, ir_type_t args); 
+static void opt_arg(map_t* funcs, struct ir_arg* arg, ir_type_t args);
 
-   switch (arg->arg_type) {
-      case IR_ARG_DATA: return list_get(&arg->data.types, 0);
-      case IR_ARG_PARAM: return list_get(&args, arg->call.param->index);
-      case IR_ARG_CALL: {
-         if (arg->call.args.size != arg->call.func->params.l.size) {
-            printf("Number of arguments unequal\n");
-         exit(1);
-         }
-         struct list arg_types;
-         list_init(&arg_types);
-         
-         for (int i = 0; i < arg->call.args.size; i++) {
-            struct ir_arg* a = (struct ir_arg*) list_get(&arg->call.args, i);
-            
-            list_add(&arg_types, semantic_arg_check(funcs, info, a, args));
-         }
-         
-         struct ir_func* func = arg->call.func;
-         
-         
-         char* binary_operation[] = {
-            "+", "-", "*", "/", "=", "!=", "<=", ">=", "<", ">", ""
-         };
-         // check if call is on binary function
-         for (int i = 0; binary_operation[i] != ""; i++) {
-            if (strcmp(binary_operation[i], func->name) == 0) {
-               struct ir_type* type = list_get(&arg_types, 0);
-               if (type == NULL) {
-                  return NULL;
-               }
-               arg->call.func = map_get(&type->ops, func->name, strlen(func->name)+1);
-               return type;
-            }
-         }
-         
-         return optimize(funcs, info, arg->call.func, arg_types);
-      }
-   }
-}
+void optimize(map_t* funcs, char* name, ir_type_t args) {
+   struct ir_func* func = map_get(funcs, name, strlen(name)+1);
 
-struct ir_type* optimize(struct map* funcs, map_t* info, struct ir_func* f, struct list args) {
-   {
-      struct ir_func* found = map_get(funcs, f->name, strlen(f->name)+1);
-      if (found == NULL) {
-         printf("function not found %s\n", f->name);
-         exit(1);
-      }
-   }
-
-   if (list_size(&f->cases) == 0) {
-      return f;
-   }
-   
-   int num = list_size(&args);
-   
-   char* strs[num+1];
-   strs[0] = f->name;
-   for (int i = 0; i < num; i++) {
-      struct ir_type* type = list_get(&args, i);
-      strs[i+1] = type->name;
-   }
-   
-   char* name = malloc(512);
-   concat(name, '_', num+1, strs);
-   
-   struct ir_func* func_new = NULL;
-   
-   
-   func_new = map_get(funcs, name, strlen(name)+1);
-   if (func_new != NULL) {
-      if ( (num == 0 && func_new->type != NULL) || (num > 0) ) {
-         return func_new;
-      }
-   } else {  
-      func_new = ir_func_cpy(f);
-      func_new->ref = 1;
-      f->ref--;
-      func_new->name = name;
-      map_set(funcs, name, strlen(name)+1, func_new);
-   }
-   
-   int j;
-   for (int i = 0; i < list_size(&func_new->cases); i++) {
-      struct ir_case* c = list_get(&func_new->cases, i);
-       
-      semantic_arg_check(funcs, info, c->cond, args);
-      struct ir_type* type = semantic_arg_check(funcs, info, c->func, args);
-      
-      if (type != NULL) {
-         j = i;
-         func_new->type = type;
-         break;
-      }
-   }
-   
-   
-   if (func_new->type == NULL) {
-      printf("infinity loop in %s\n", f->name);
+   if (func == NULL) {
+      printf("function not found %s\n", name);
       exit(1);
    }
-   
-   for (int i = 0; i < list_size(&func_new->cases); i++) {
-      if (j == i) {
-         continue;
-      }
-      struct ir_case* c = list_get(&func_new->cases, i);
-      
-      semantic_arg_check(funcs, info, c->cond, args);
-      struct ir_type* type = semantic_arg_check(funcs, info, c->func, args);
-      
-      if (type == NULL) {
-         printf("cases %i in %s does not have an explicit return type\n", i+1, func_new->name);
-         exit(1);
-      }
-      
-      if (type != func_new->type) {
-         printf("cases in %s do not have the same return type (%p != %p)\n", func_new->name, type, func_new->type);
-         exit(1);
-      }
+   func->ref++;
+
+   // define typeof function
+   struct ir_func* f = ir_func_init("typeof", -1);
+   f->ref = -1;
+   map_set(funcs, f->name, strlen(f->name)+1, f);
+
+   // remove unused functions
+   ir_rem_unused(funcs);
+
+   opt_func(funcs, func, args);
+}
+
+static void opt_func(map_t* funcs, struct ir_func* func, ir_type_t args) {
+   // duplicate functoin
+   for (list_it* it = list_iterator(&func->cases); it != NULL; it = it->next) {
+      struct ir_case* c = it->data;
+      opt_arg(funcs, c->func, args);
    }
-   
-   return func_new;
+}
+
+
+static void opt_arg(map_t* funcs, struct ir_arg* arg, ir_type_t args) {
+   if (arg->arg_type == IR_ARG_CALL) {
+      for (list_it* it = list_iterator(&arg->call.args); it != NULL; it = it->next) {
+         opt_arg(funcs, it->data, args);
+      }
+
+      if (strcmp("typeof", arg->call.func_name) == 0) {
+         char* name = malloc(512);
+         ir_type_t type = ir_typeof(funcs, args, list_get(&arg->call.args, 0));
+         if (type == NULL) printf("error\n");
+         char* end = ir_typestr(name+4, type);
+         int len = end - name - 4;
+         *((int*)name) = len;
+         // TODO free memory for all sub args
+         memcpy(arg, ir_arg_data(name, len+4, ir_type("array"), -1), sizeof(*arg));
+         return;
+      }
+
+      struct ir_func* caller = map_get(funcs, arg->call.func_name, strlen(arg->call.func_name) + 1);
+      struct ir_func* callee = NULL;
+
+      if (caller->ref == 1) {
+         callee = caller;
+      } else {
+         callee = ir_func_cpy(caller);
+         caller->ref--;
+         callee->ref = 1;
+         char* callee_name = malloc(512);
+         sprintf(callee_name, "%s%i", caller->name, id++);
+         callee->name = callee_name;
+         map_set(funcs, callee_name, strlen(callee_name) + 1, callee);
+      }
+
+      opt_func(funcs, callee, args); 
+   }
 }

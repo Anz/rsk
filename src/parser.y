@@ -147,7 +147,7 @@ factor   : '(' cmp ')'                    { $$ = $2; }
          | INT                            { $$ = ir_arg_word($1, ir_type("int"), yylineno); }
          | FLOAT                          { $$ = ir_arg_word($1, ir_type("float"), yylineno); }
          | ARRAY                          { $$ = ir_arg_data($1.ptr, $1.size, ir_type("array"), yylineno); }
-         | ID '(' args ')'                { $$ = ir_arg_call(func_cur, $1, $3, yylineno); }
+         | ID '(' args ')'                { $$ = ir_arg_call(func_cur, $1, $3, yylineno); struct ir_func* f = map_get(funcs, $1, strlen($1)+1); if (f) f->ref++; }
          | ID                             { $$ = ir_arg_call(func_cur, $1, NULL, yylineno); }
          ;
 

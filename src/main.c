@@ -97,9 +97,10 @@ int main (int argc, char *argv[]) {
    
    // compile into intermediate representation
    parse(&argv[argi], argc-argi, &funcs);
-   
+
+   // check semantics
    semantic_check(&funcs);
-   
+
    // print errors
    bool has_errors = false;
    for (map_it* it = map_iterator(&funcs); it != NULL; it = map_next(it)) {
@@ -114,21 +115,9 @@ int main (int argc, char *argv[]) {
       fflush(stderr);
       return 1;
    }
-   
-   
-   /*struct list args;
-   list_init(&args);
-   
-   optimize(&funcs, &info, map_get(&funcs, "main", 5), args);
-   
-   // remove unused functions
-   for (map_it* it = map_iterator(&funcs); it != NULL; it = it->next) {
-      struct ir_func* f = it->data;
-      if (f->type == NULL) {
-         map_set(&funcs, f->name, strlen(f->name)+1, NULL);
-      }
-   }*/
 
+   // optimize   
+   optimize(&funcs, "main", NULL);
 
    // compile into native code
    struct buffer buf = i32_compile(funcs);

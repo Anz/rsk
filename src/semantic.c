@@ -67,10 +67,12 @@ static struct semantic_type semantic_arg_check(map_t* funcs, struct ir_arg* arg)
          break;
       }
       case IR_ARG_CALL: {
+         printf("calling %s\n", arg->call.func_name);
          struct ir_func* call = map_get(funcs, arg->call.func_name, strlen(arg->call.func_name) + 1);
          semantic_func_check(funcs, call);
          type.type = call->type;
          type.param = call->param;
+         break;
       }
    }
 
