@@ -1,13 +1,3 @@
-.data
-_int:   .int 3 
-_int_text:  .ascii "int"
-  
-_float:   .int 5 
-_float_text:  .ascii "float"
-  
-_array:   .int 5 
-_array_text:  .ascii "array"
-  
 .text
         .global _start
 

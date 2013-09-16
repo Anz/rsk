@@ -91,13 +91,6 @@ void x86_call(buffer_t* text, buffer_t* data, struct ir_arg* arg, int arg_count)
    char* name = arg->call.func_name;
    struct ir_arg* left_op = list_get(&arg->call.args, 0);
 
-   /*if (strcmp("typeof",name) == 0) {
-      x86_restore_reg(text, tmpargidx);
-      buffer_writes(text, "\tmov $_int, %%eax\n");
-      argidx = tmpargidx + 1;
-      return;
-   }*/
-
    for (int i = 0; i < arg->call.args.size; i++) {
       struct ir_arg* a =  (struct ir_arg*) list_get(&arg->call.args, i);
       x86_func_compile(text, data, a, arg_count);
@@ -156,18 +149,10 @@ void x86_func_compile(buffer_t* text, buffer_t* data, struct ir_arg* arg, int ar
             len.len = arg->data.size;
             x86_loadd(text, name);
             
-            buffer_writes(data, "%s: .byte", name);
-            for (int i = 0; i < len.len; i++) {
-               if (i > 0) {
-                  buffer_writes(data, ",");
-               }
-               buffer_writes(data, " 0x%02x", (int)((char*)arg->data.ptr)[i]);
-            }  
-            
             char escaped[512];
-            escape(escaped, arg->data.ptr+4, arg->data.size-3);
-            
-            buffer_writes(data, " # '%s'\n", escaped);
+            escape(escaped, arg->data.ptr, arg->data.size);
+
+            buffer_writes(data, "%s: .int %i\n%s_data: .ascii \"%s\"\n", name, arg->data.size, name, escaped);
          }
          break;
       }

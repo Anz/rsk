@@ -9,31 +9,10 @@
 extern void yyterminate();
 
 char* sc_string(char* str) {
-   /*int len = strlen(s);
-   int shift = -1;
-   s[len-1] = '\0';
-   for (int i = 1; i < len; i++) {
-      s[i+shift] = s[i];
-      
-      if (s[i] == '\\' && i+1 < len) {
-         switch (s[i+1]) {
-            case 'n':
-               s[i+shift] = '\n';
-               i++;
-               shift--;
-               break;
-         }
-      }
-   }
-   
-   return s;*/
-   
    int len = strlen(str);
-   char* data = malloc(len - 2 + 4); // strlen(str) - 2x appro + 4 bytes length
+   char* data = malloc(len - 2); // strlen(str) - 2x appro
    
-   *((int*)data) = len - 2;
-   
-   int di = 4;
+   int di = 0;
    for (int si = 1; si < len - 1; si++) {
       if (strncmp("\\n", &str[si], 2) == 0) {
          data[di++] = '\n';

@@ -44,12 +44,10 @@ static void opt_arg(map_t* funcs, struct ir_arg* arg, ir_type_t args) {
       if (strcmp("typeof", arg->call.func_name) == 0) {
          char* name = malloc(512);
          ir_type_t type = ir_typeof(funcs, args, list_get(&arg->call.args, 0));
-         if (type == NULL) printf("error\n");
-         char* end = ir_typestr(name+4, type);
-         int len = end - name - 4;
-         *((int*)name) = len;
+         char* end = ir_typestr(name, type);
+         int len = end - name;
          // TODO free memory for all sub args
-         memcpy(arg, ir_arg_data(name, len+4, ir_type("array"), -1), sizeof(*arg));
+         memcpy(arg, ir_arg_data(name, len, ir_type("array"), -1), sizeof(*arg));
          return;
       }
 
